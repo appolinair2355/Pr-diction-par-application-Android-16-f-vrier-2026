@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Prédicteur Baccarat</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body { padding: 20px; }
+        .admin-container { max-width: 1200px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>🔧 Panneau Administrateur</h1>
+            <p>sossoukouam@gmail.com</p>
+        </div>
+        
+        <div class="admin-stats" id="adminStats">
+            <div class="admin-stat-card">
+                <div class="value" id="totalUsers">0</div>
+                <div class="label">Utilisateurs</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="value" id="activeUsers">0</div>
+                <div class="label">Actifs</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="value" id="expiredUsers">0</div>
+                <div class="label">Expirés</div>
+            </div>
+        </div>
+        
+        <h2>Liste des utilisateurs</h2>
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Inscription</th>
+                    <th>Expiration</th>
+                    <th>Temps restant</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody">
+                {% for user in users %}
+                <tr data-user-id="{{ user.id }}" data-email="{{ user.email }}">
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.created_at }}</td>
+                    <td>{{ user.subscription_end or 'Jamais' }}</td>
+                    <td class="time-remaining" data-end="{{ user.subscription_end }}">
+                        Calcul...
+                    </td>
+                    <td>
+                        <div class="user-actions">
+                            <button class="btn-small btn-add-1" onclick="addTime('{{ user.email }}', 1)">+1j</button>
+                            <button class="btn-small btn-add-7" onclick="addTime('{{ user.email }}', 7)">+7j</button>
+                            <button class="btn-small btn-add-30" onclick="addTime('{{ user.email }}', 30)">+30j</button>
+                            <button class="btn-small btn-block" onclick="toggleBlock({{ user.id }}, {{ user.is_active }})">
+                                {{ 'Débloquer' if not user.is_active else 'Bloquer' }}
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        function updateTimers() {
+            document.querySelectorAll('.time-remaining').forEach(el => {
+                const end = el.dataset.end;
+                if (!end) {
+                    el.textContent = 'Non abonné';
+                    el.className = 'time-remaining expired';
+                    return;
+                }
+                
+                const endDate = new Date(end);
+                const now = new Date();
+                const diff = endDate - now;
+                
+                if (diff <= 0) {
+                    el.textContent = 'EXPIRÉ';
+                    el.className = 'time-remaining expired';
+                } else {
+                    const days = Math.floor(diff / 86400000);
+                    const hours = Math.floor((diff % 86400000) / 3600000);
+                    el.textContent = `${days}j ${hours}h`;
+                    el.className = 'time-remaining active';
+                }
+            });
+        }
+        
+        async function addTime(email, days) {
+            const res = await fetch('/api/admin/add-time', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, days})
+            });
+            
+            if (res.ok) {
+                alert(`+${days} jours ajoutés à ${email}`);
+                location.reload();
+            }
+        }
+        
+        async function toggleBlock(userId, currentStatus) {
+            const action = currentStatus ? 'block' : 'unblock';
+            const res = await fetch('/api/admin/block', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: userId, action})
+            });
+            
+            if (res.ok) location.reload();
+        }
+        
+        // Stats
+        const rows = document.querySelectorAll('tbody tr');
+        document.getElementById('totalUsers').textContent = rows.length;
+        
+        updateTimers();
+        setInterval(updateTimers, 60000);
+    </script>
+</body>
+</html>
