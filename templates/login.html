@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Prédicteur Baccarat</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="main-title" style="margin-bottom: 30px;">
+                <div class="icon">🎰</div>
+                <h1>Prédicteur Baccara</h1>
+            </div>
+            
+            <h2 data-translate="login">Connexion</h2>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label data-translate="email">Email</label>
+                    <input type="email" name="email" required 
+                           placeholder="votre@email.com">
+                </div>
+                
+                <div class="form-group">
+                    <label data-translate="password">Mot de passe</label>
+                    <input type="password" name="password" required
+                           placeholder="••••••">
+                </div>
+                
+                <button type="submit" class="btn-auth" data-translate="submit">
+                    Se connecter
+                </button>
+            </form>
+            
+            <div class="auth-link">
+                <a href="/register" data-translate="no_account">
+                    Pas de compte ? S'inscrire
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/lang.js"></script>
+    <script>
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const form = new FormData(e.target);
+            
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                body: form
+            });
+            
+            if (res.ok) {
+                window.location = '/';
+            } else {
+                alert('Erreur de connexion');
+            }
+        };
+    </script>
+</body>
+</html>
