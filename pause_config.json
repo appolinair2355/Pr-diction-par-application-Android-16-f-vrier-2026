@@ -1,0 +1,9 @@
+{
+  "cycle": [180, 300, 240],
+  "current_index": 0,
+  "predictions_count": 0,
+  "is_paused": false,
+  "pause_end_time": null,
+  "just_resumed": false
+}
+
