@@ -108,17 +108,21 @@ async def start_web_server(bot_clients):
     from aiohttp import web
     
     app = setup_web_app(bot_clients)
-    runner = web.AppRunner(app)
     
+    # 🔧 CORRECTION: Utiliser web.AppRunner correctement
+    runner = web.AppRunner(app)
     await runner.setup()
     
     port = int(os.getenv('PORT', PORT))
-    site = web.TCPSite(runner, '0.0.0.0', port)
     
+    # 🔧 CORRECTION: Créer le site avec l'hôte 0.0.0.0
+    site = web.TCPSite(runner, host='0.0.0.0', port=port)
     await site.start()
-    logger.info(f"🌐 Serveur web: http://0.0.0.0:{port}")
     
-    return runner
+    logger.info(f"🌐 Serveur web démarré sur: http://0.0.0.0:{port}")
+    
+    # 🔧 CORRECTION: Retourner runner ET site pour garder la référence
+    return runner, site
 
 async def main():
     logger.info("🚀 Démarrage...")
@@ -138,25 +142,34 @@ async def main():
     web_server.bot_client = bot_client
     web_server.admin_bot_client = admin_bot_client
     
-    # Démarrer serveur web
-    web_runner = await start_web_server({
+    # 🔧 CORRECTION: Démarrer le serveur web AVANT run_until_disconnected
+    web_runner, web_site = await start_web_server({
         'user': bot_client,
         'admin': admin_bot_client
     })
     
-    # Garder l'application en vie
-    if bot_client:
-        logger.info("✅ Application démarrée!")
-        await bot_client.run_until_disconnected()
-    else:
+    # 🔧 CORRECTION: Garder le serveur en vie avec une boucle infinie
+    # au lieu de run_until_disconnected qui bloque tout
+    logger.info("✅ Application démarrée avec succès!")
+    
+    try:
         while True:
-            await asyncio.sleep(3600)
+            await asyncio.sleep(3600)  # Garder le programme en vie
+    except asyncio.CancelledError:
+        logger.info("🛑 Arrêt demandé")
+    finally:
+        # Cleanup
+        await web_runner.cleanup()
+        if bot_client:
+            await bot_client.disconnect()
+        if admin_bot_client:
+            await admin_bot_client.disconnect()
 
 if __name__ == '__main__':
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("👋 Arrêt")
+        logger.info("👋 Arrêt par l'utilisateur")
     except Exception as e:
         logger.error(f"💥 Erreur fatale: {e}")
         import traceback
