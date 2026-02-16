@@ -28,7 +28,8 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             subscription_end TIMESTAMP,
             is_active BOOLEAN DEFAULT 1,
-            last_login TIMESTAMP
+            last_login TIMESTAMP,
+            is_admin BOOLEAN DEFAULT 0
         )
     ''')
     
@@ -58,6 +59,41 @@ def init_db():
     
     conn.commit()
     conn.close()
+    
+    # 🔧 CORRECTION : Créer l'admin par défaut
+    create_default_admin()
+
+def create_default_admin():
+    """Crée l'administrateur par défaut si non existant"""
+    from config import ADMIN_EMAIL, ADMIN_PASSWORD
+    
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    
+    # Vérifier si l'admin existe
+    c.execute('SELECT id FROM users WHERE email = ?', (ADMIN_EMAIL,))
+    if not c.fetchone():
+        # Créer l'admin
+        password_hash = hash_password(ADMIN_PASSWORD)
+        c.execute('''
+            INSERT INTO users (email, password_hash, first_name, last_name, is_active, is_admin, subscription_end)
+            VALUES (?, ?, ?, ?, 1, 1, ?)
+        ''', (ADMIN_EMAIL, password_hash, 'Admin', 'System', datetime.now() + timedelta(days=3650)))
+        
+        conn.commit()
+        print(f"✅ Admin créé: {ADMIN_EMAIL}")
+    else:
+        # Mettre à jour le mot de passe et s'assurer que is_admin = 1
+        password_hash = hash_password(ADMIN_PASSWORD)
+        c.execute('''
+            UPDATE users 
+            SET password_hash = ?, is_admin = 1, is_active = 1 
+            WHERE email = ?
+        ''', (password_hash, ADMIN_EMAIL))
+        conn.commit()
+        print(f"✅ Admin mis à jour: {ADMIN_EMAIL}")
+    
+    conn.close()
 
 def hash_password(password: str) -> str:
     """Hash un mot de passe"""
@@ -80,8 +116,8 @@ def create_user(email: str, password: str, first_name: str, last_name: str) -> d
     try:
         password_hash = hash_password(password)
         c.execute('''
-            INSERT INTO users (email, password_hash, first_name, last_name)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO users (email, password_hash, first_name, last_name, is_admin)
+            VALUES (?, ?, ?, ?, 0)
         ''', (email.lower(), password_hash, first_name, last_name))
         
         user_id = c.lastrowid
@@ -106,7 +142,7 @@ def get_user_by_email(email: str) -> dict:
     
     c.execute('''
         SELECT id, email, password_hash, first_name, last_name, 
-               subscription_end, is_active, created_at
+               subscription_end, is_active, created_at, is_admin
         FROM users WHERE email = ?
     ''', (email.lower(),))
     
@@ -122,7 +158,8 @@ def get_user_by_email(email: str) -> dict:
             'last_name': row[4],
             'subscription_end': row[5],
             'is_active': row[6],
-            'created_at': row[7]
+            'created_at': row[7],
+            'is_admin': row[8] if len(row) > 8 else False
         }
     return None
 
@@ -151,7 +188,7 @@ def get_session(session_id: str) -> dict:
     
     c.execute('''
         SELECT s.session_id, s.user_id, s.expires_at,
-               u.email, u.first_name, u.last_name, u.subscription_end, u.is_active
+               u.email, u.first_name, u.last_name, u.subscription_end, u.is_active, u.is_admin
         FROM sessions s
         JOIN users u ON s.user_id = u.id
         WHERE s.session_id = ? AND s.expires_at > ?
@@ -169,7 +206,8 @@ def get_session(session_id: str) -> dict:
             'first_name': row[4],
             'last_name': row[5],
             'subscription_end': row[6],
-            'is_active': row[7]
+            'is_active': row[7],
+            'is_admin': row[8] if len(row) > 8 else False
         }
     return None
 
@@ -214,7 +252,7 @@ def get_all_users() -> list:
     
     c.execute('''
         SELECT id, email, first_name, last_name, 
-               subscription_end, is_active, created_at
+               subscription_end, is_active, created_at, is_admin
         FROM users ORDER BY created_at DESC
     ''')
     
@@ -227,7 +265,8 @@ def get_all_users() -> list:
             'last_name': row[3],
             'subscription_end': row[4],
             'is_active': row[5],
-            'created_at': row[6]
+            'created_at': row[6],
+            'is_admin': row[7] if len(row) > 7 else False
         })
     
     conn.close()
