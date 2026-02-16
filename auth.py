@@ -26,7 +26,7 @@ async def register_user(email: str, password: str, first_name: str, last_name: s
     return {'success': True, 'user': user}
 
 async def login_user(email: str, password: str):
-    """Connexion utilisateur"""
+    """Connexion utilisateur (y compris admin)"""
     user = get_user_by_email(email)
     if not user:
         return {'success': False, 'error': 'invalid_credentials'}
@@ -51,7 +51,8 @@ async def login_user(email: str, password: str):
             'email': user['email'],
             'first_name': user['first_name'],
             'last_name': user['last_name'],
-            'subscription_end': user['subscription_end']
+            'subscription_end': user['subscription_end'],
+            'is_admin': user.get('is_admin', False)
         }
     }
 
@@ -67,7 +68,7 @@ async def logout_user(session_id: str):
     return {'success': True}
 
 def check_admin_credentials(email: str, password: str):
-    """Vérifie les credentials admin"""
+    """Vérifie les credentials admin (ancienne méthode)"""
     return email == ADMIN_EMAIL and password == ADMIN_PASSWORD
 
 def has_active_subscription(user: dict) -> bool:
@@ -82,3 +83,7 @@ def has_active_subscription(user: dict) -> bool:
         sub_end = datetime.fromisoformat(sub_end)
     
     return sub_end > datetime.now()
+
+def is_admin(user: dict) -> bool:
+    """Vérifie si l'utilisateur est admin"""
+    return user.get('is_admin', False) or user.get('email') == ADMIN_EMAIL
