@@ -6,6 +6,7 @@ import logging
 from aiohttp import web
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from datetime import datetime
+from telethon import events  # 🔧 IMPORT MANQUANT!
 
 from database import (
     add_subscription_time, get_all_users, block_user, 
