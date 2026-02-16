@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prédicteur Baccarat</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Timer abonnement -->
+    <div class="timer-display" id="timerDisplay">
+        <div class="timer-label" data-translate="time_remaining">Temps restant</div>
+        <div class="timer-value" id="timerValue">--:--:--</div>
+    </div>
+
+    <div class="container" style="margin-top: 70px;">
+        <!-- Progression -->
+        <div class="progress-header" id="progressHeader">
+            0 / 0
+        </div>
+        
+        <!-- Titre -->
+        <div class="main-title">
+            <div class="icon">🎰</div>
+            <h1 data-translate="title">Prédicteur Baccara</h1>
+        </div>
+        
+        <!-- Langue -->
+        <div class="lang-selector">
+            <select id="langSelect" onchange="changeLang(this.value)">
+                <option value="fr">🇫🇷 Français</option>
+                <option value="en">🇬🇧 English</option>
+                <option value="es">🇪🇸 Español</option>
+                <option value="ru">🇷🇺 Русский</option>
+                <option value="de">🇩🇪 Deutsch</option>
+                <option value="it">🇮🇹 Italiano</option>
+                <option value="pt">🇵🇹 Português</option>
+                <option value="ar">🇸🇦 العربية</option>
+                <option value="zh">🇨🇳 中文</option>
+            </select>
+        </div>
+        
+        <!-- Info bar -->
+        <div class="info-bar">
+            <div class="info-box role">
+                <div class="label" data-translate="role">Rôle</div>
+                <div class="value" data-translate="player">Joueur</div>
+            </div>
+            <div class="info-box win-rate">
+                <div class="label" data-translate="win_rate">Win %</div>
+                <div class="value" id="winRateValue">0%</div>
+            </div>
+        </div>
+        
+        <!-- Username -->
+        <div class="username">
+            <span class="trophy">🏆</span>
+            <span id="userName">{{ user.first_name }}</span>
+            <span class="flag" id="userFlag">🇫🇷</span>
+        </div>
+        
+        <!-- Déconnexion -->
+        <button class="btn btn-disconnect" onclick="logout()" data-translate="disconnect">
+            🔒 Déconnexion
+        </button>
+        
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-half won">
+                <div class="label" data-translate="won">Gagnants</div>
+                <div class="value" id="wonValue">0</div>
+            </div>
+            <div class="stat-half lost">
+                <div class="label" data-translate="lost">Perdus</div>
+                <div class="value" id="lostValue">0</div>
+            </div>
+        </div>
+        
+        <!-- Prédiction Active (dernière envoyée) -->
+        <div class="active-prediction" id="activePrediction">
+            <div class="pred-title" data-translate="last_prediction">DERNIÈRE PRÉDICTION</div>
+            <div class="pred-number" id="predNumber">---</div>
+            <div class="pred-suit" id="predSuit">---</div>
+            <div class="pred-rattrapage" id="predRattrapage"></div>
+            <div class="pred-time" id="predTime">--:--:--</div>
+        </div>
+        
+        <!-- Historique -->
+        <div class="history-section">
+            <div class="history-title" data-translate="history">Historique</div>
+            <div class="history-grid" id="historyGrid">
+                <!-- Rempli par JS -->
+            </div>
+        </div>
+        
+        <!-- Export/Import -->
+        <div class="export-import">
+            <button class="btn-export" data-translate="export">
+                💾 Exporter
+            </button>
+            <button class="btn-import" data-translate="import">
+                📁 Importer
+            </button>
+        </div>
+        
+        <!-- Social -->
+        <div class="social-links">
+            <button class="btn-social btn-telegram" data-translate="telegram">
+                ✈️ Telegram
+            </button>
+            <button class="btn-social btn-whatsapp" data-translate="whatsapp">
+                📱 WhatsApp
+            </button>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            © 2025 <span data-translate="footer">Prédicteur Baccara</span>
+        </div>
+    </div>
+
+    <!-- Modal abonnement expiré -->
+    <div class="modal-overlay hidden" id="expiredModal">
+        <div class="modal-content">
+            <div class="icon">⏰</div>
+            <h2 data-translate="subscription_expired">Abonnement expiré</h2>
+            <p id="expiredMessage">
+                Bonjour <span class="user-name" id="expiredUserName">{{ user.first_name }}</span>,
+                votre abonnement a expiré. Rechargez pour continuer.
+            </p>
+            <button class="btn-subscribe" data-translate="subscribe_now">
+                S'abonner maintenant
+            </button>
+        </div>
+    </div>
+
+    <script src="/static/js/lang.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Init
+        const currentUser = {
+            first_name: '{{ user.first_name }}',
+            last_name: '{{ user.last_name }}',
+            email: '{{ user.email }}',
+            subscription_end: '{{ user.subscription_end }}'
+        };
+        
+        initApp('{{ lang }}', currentUser);
+    </script>
+</body>
+</html>
