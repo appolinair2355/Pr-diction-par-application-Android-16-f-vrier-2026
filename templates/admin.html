@@ -6,15 +6,41 @@
     <title>Admin - Prédicteur Baccarat</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
-        body { padding: 20px; }
+        body { padding: 20px; background: #1a1a2e; color: white; font-family: Arial, sans-serif; }
         .admin-container { max-width: 1200px; margin: 0 auto; }
+        .admin-header { text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; }
+        .admin-header h1 { margin: 0; font-size: 2em; }
+        .admin-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .admin-stat-card { background: #16213e; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #0f3460; }
+        .admin-stat-card .value { font-size: 2em; font-weight: bold; color: #e94560; }
+        .admin-stat-card .label { color: #aaa; margin-top: 5px; }
+        .users-table { width: 100%; border-collapse: collapse; background: #16213e; border-radius: 10px; overflow: hidden; }
+        .users-table th, .users-table td { padding: 12px; text-align: left; border-bottom: 1px solid #0f3460; }
+        .users-table th { background: #0f3460; font-weight: bold; }
+        .users-table tr:hover { background: #1a1a2e; }
+        .user-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+        .btn-small { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; }
+        .btn-add-1 { background: #28a745; color: white; }
+        .btn-add-7 { background: #17a2b8; color: white; }
+        .btn-add-30 { background: #ffc107; color: black; }
+        .btn-block { background: #dc3545; color: white; }
+        .btn-unblock { background: #6c757d; color: white; }
+        .time-remaining { font-weight: bold; }
+        .time-remaining.active { color: #28a745; }
+        .time-remaining.expired { color: #dc3545; }
+        .logout-btn { position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 15px 30px; border-radius: 5px; display: none; z-index: 1000; }
     </style>
 </head>
 <body>
+    <button class="logout-btn" onclick="logout()">🚪 Déconnexion</button>
+    
+    <div class="notification" id="notification"></div>
+    
     <div class="admin-container">
         <div class="admin-header">
             <h1>🔧 Panneau Administrateur</h1>
-            <p>sossoukouam@gmail.com</p>
+            <p>{{ admin_email }}</p>
         </div>
         
         <div class="admin-stats" id="adminStats">
@@ -32,21 +58,24 @@
             </div>
         </div>
         
-        <h2>Liste des utilisateurs</h2>
+        <h2>📋 Liste des utilisateurs</h2>
         <table class="users-table">
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Nom</th>
                     <th>Email</th>
                     <th>Inscription</th>
                     <th>Expiration</th>
                     <th>Temps restant</th>
+                    <th>Statut</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="usersTableBody">
                 {% for user in users %}
                 <tr data-user-id="{{ user.id }}" data-email="{{ user.email }}">
+                    <td>{{ user.id }}</td>
                     <td>{{ user.first_name }} {{ user.last_name }}</td>
                     <td>{{ user.email }}</td>
                     <td>{{ user.created_at }}</td>
@@ -55,13 +84,25 @@
                         Calcul...
                     </td>
                     <td>
+                        {% if user.is_active %}
+                            <span style="color: #28a745;">✅ Actif</span>
+                        {% else %}
+                            <span style="color: #dc3545;">🚫 Bloqué</span>
+                        {% endif %}
+                        {% if user.is_admin %}
+                            <span style="color: #ffc107;">👑 Admin</span>
+                        {% endif %}
+                    </td>
+                    <td>
                         <div class="user-actions">
                             <button class="btn-small btn-add-1" onclick="addTime('{{ user.email }}', 1)">+1j</button>
                             <button class="btn-small btn-add-7" onclick="addTime('{{ user.email }}', 7)">+7j</button>
                             <button class="btn-small btn-add-30" onclick="addTime('{{ user.email }}', 30)">+30j</button>
-                            <button class="btn-small btn-block" onclick="toggleBlock({{ user.id }}, {{ user.is_active }})">
-                                {{ 'Débloquer' if not user.is_active else 'Bloquer' }}
-                            </button>
+                            {% if user.is_active %}
+                            <button class="btn-small btn-block" onclick="toggleBlock({{ user.id }}, true)">Bloquer</button>
+                            {% else %}
+                            <button class="btn-small btn-unblock" onclick="toggleBlock({{ user.id }}, false)">Débloquer</button>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -71,6 +112,16 @@
     </div>
     
     <script>
+        function showNotification(message, type = 'success') {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.style.background = type === 'success' ? '#28a745' : '#dc3545';
+            notif.style.display = 'block';
+            setTimeout(() => {
+                notif.style.display = 'none';
+            }, 3000);
+        }
+        
         function updateTimers() {
             document.querySelectorAll('.time-remaining').forEach(el => {
                 const end = el.dataset.end;
@@ -97,35 +148,90 @@
         }
         
         async function addTime(email, days) {
-            const res = await fetch('/api/admin/add-time', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({email, days})
-            });
-            
-            if (res.ok) {
-                alert(`+${days} jours ajoutés à ${email}`);
-                location.reload();
+            try {
+                const res = await fetch('/api/admin/add-time', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email, days})
+                });
+                
+                if (res.ok) {
+                    showNotification(`✅ +${days} jours ajoutés à ${email}`);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    const data = await res.json();
+                    showNotification(`❌ Erreur: ${data.error}`, 'error');
+                }
+            } catch (e) {
+                showNotification(`❌ Erreur réseau`, 'error');
             }
         }
         
-        async function toggleBlock(userId, currentStatus) {
-            const action = currentStatus ? 'block' : 'unblock';
-            const res = await fetch('/api/admin/block', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({user_id: userId, action})
-            });
-            
-            if (res.ok) location.reload();
+        async function toggleBlock(userId, block) {
+            try {
+                const action = block ? 'block' : 'unblock';
+                const res = await fetch('/api/admin/block', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({user_id: userId, action})
+                });
+                
+                if (res.ok) {
+                    showNotification(block ? '🚫 Utilisateur bloqué' : '✅ Utilisateur débloqué');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    const data = await res.json();
+                    showNotification(`❌ Erreur: ${data.error}`, 'error');
+                }
+            } catch (e) {
+                showNotification(`❌ Erreur réseau`, 'error');
+            }
+        }
+        
+        async function logout() {
+            await fetch('/api/logout', {method: 'POST'});
+            window.location = '/login';
         }
         
         // Stats
-        const rows = document.querySelectorAll('tbody tr');
-        document.getElementById('totalUsers').textContent = rows.length;
+        function updateStats() {
+            const rows = document.querySelectorAll('tbody tr');
+            let active = 0;
+            let expired = 0;
+            
+            rows.forEach(row => {
+                const timeCell = row.querySelector('.time-remaining');
+                if (timeCell) {
+                    if (timeCell.textContent.includes('EXPIRÉ') || timeCell.textContent.includes('Non abonné')) {
+                        expired++;
+                    } else {
+                        active++;
+                    }
+                }
+            });
+            
+            document.getElementById('totalUsers').textContent = rows.length;
+            document.getElementById('activeUsers').textContent = active;
+            document.getElementById('expiredUsers').textContent = expired;
+        }
         
+        // Init
         updateTimers();
+        updateStats();
         setInterval(updateTimers, 60000);
+        
+        // Rafraîchir les données toutes les 30 secondes
+        setInterval(async () => {
+            try {
+                const res = await fetch('/api/admin/users');
+                if (res.ok) {
+                    const data = await res.json();
+                    // Vous pouvez mettre à jour le tableau ici sans recharger
+                }
+            } catch (e) {
+                console.error('Erreur refresh:', e);
+            }
+        }, 30000);
     </script>
 </body>
 </html>
