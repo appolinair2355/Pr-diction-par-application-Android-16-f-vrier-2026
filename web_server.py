@@ -34,9 +34,626 @@ def render_template(template_name, **context):
     template = env.get_template(template_name)
     return template.render(**context)
 
-# ... [routes existantes conservées] ...
+def render_template_string(template, **kwargs):
+    from jinja2 import Template
+    return Template(template).render(**kwargs)
 
-# 🔧 NOUVEAU: Route pour données temps réel des prédictions
+# ============================================================
+# ROUTES PAGES (AJOUTÉES - MANQUANTES AVANT)
+# ============================================================
+
+async def index(request):
+    """Page d'accueil - redirige vers /live"""
+    raise web.HTTPFound('/live')
+
+async def login_page(request):
+    """Page de connexion"""
+    html = """<!DOCTYPE html>
+<html>
+<head>
+    <title>Connexion - Baccarat Bot</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .login-box {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            width: 90%;
+            max-width: 400px;
+        }
+        h1 { color: #ffd700; text-align: center; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #aaa; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 16px;
+        }
+        input:focus { outline: 2px solid #ffd700; }
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            color: #1a1a2e;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: scale(1.02); }
+        .links { text-align: center; margin-top: 20px; }
+        .links a { color: #00ff88; text-decoration: none; }
+        .links a:hover { text-decoration: underline; }
+        .error { color: #ff4444; text-align: center; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>🔐 Connexion</h1>
+        <div id="error" class="error"></div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit">Se connecter</button>
+        </form>
+        <div class="links">
+            <p>Pas de compte ? <a href="/register">S'inscrire</a></p>
+            <p><a href="/">← Retour à l'accueil</a></p>
+        </div>
+    </div>
+    <script>
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const form = new FormData(e.target);
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: form.get('email'),
+                    password: form.get('password')
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = '/';
+            } else {
+                document.getElementById('error').textContent = data.error || 'Erreur de connexion';
+            }
+        };
+    </script>
+</body>
+</html>"""
+    return web.Response(text=html, content_type='text/html')
+
+async def register_page(request):
+    """Page d'inscription"""
+    html = """<!DOCTYPE html>
+<html>
+<head>
+    <title>Inscription - Baccarat Bot</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .register-box {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            width: 90%;
+            max-width: 400px;
+        }
+        h1 { color: #ffd700; text-align: center; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #aaa; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 16px;
+        }
+        input:focus { outline: 2px solid #ffd700; }
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+            color: #1a1a2e;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: scale(1.02); }
+        .links { text-align: center; margin-top: 20px; }
+        .links a { color: #ffd700; text-decoration: none; }
+        .links a:hover { text-decoration: underline; }
+        .error { color: #ff4444; text-align: center; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="register-box">
+        <h1>📝 Inscription</h1>
+        <div id="error" class="error"></div>
+        <form id="registerForm">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" name="password" required minlength="6">
+            </div>
+            <button type="submit">S'inscrire</button>
+        </form>
+        <div class="links">
+            <p>Déjà un compte ? <a href="/login">Se connecter</a></p>
+            <p><a href="/">← Retour à l'accueil</a></p>
+        </div>
+    </div>
+    <script>
+        document.getElementById('registerForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const form = new FormData(e.target);
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: form.get('email'),
+                    password: form.get('password')
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Inscription réussie !');
+                window.location.href = '/login';
+            } else {
+                document.getElementById('error').textContent = data.error || 'Erreur d\\'inscription';
+            }
+        };
+    </script>
+</body>
+</html>"""
+    return web.Response(text=html, content_type='text/html')
+
+async def admin_login_page(request):
+    """Page de connexion admin"""
+    html = """<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Baccarat Bot</title>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .login-box {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            width: 90%;
+            max-width: 400px;
+        }
+        h1 { color: #ff4444; text-align: center; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #aaa; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .back { text-align: center; margin-top: 20px; }
+        .back a { color: #888; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>👑 Admin</h1>
+        <form id="adminForm">
+            <div class="form-group">
+                <label>Email Admin</label>
+                <input type="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit">Connexion</button>
+        </form>
+        <div class="back"><a href="/">← Retour</a></div>
+    </div>
+    <script>
+        document.getElementById('adminForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const form = new FormData(e.target);
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: form.get('email'),
+                    password: form.get('password')
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = '/admin';
+            } else {
+                alert('Accès refusé');
+            }
+        };
+    </script>
+</body>
+</html>"""
+    return web.Response(text=html, content_type='text/html')
+
+async def admin_dashboard(request):
+    """Dashboard admin"""
+    html = """<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Admin - Baccarat Bot</title>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        h1 { color: #ffd700; }
+        .logout {
+            background: #ff4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .card h3 { color: #aaa; margin-bottom: 15px; }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #00ff88;
+            color: #1a1a2e;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button.danger { background: #ff4444; color: white; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        th { color: #ffd700; }
+        .status-active { color: #00ff88; }
+        .status-blocked { color: #ff4444; }
+        .status-expired { color: #ffaa00; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👑 Dashboard Admin</h1>
+        <a href="#" onclick="logout()" class="logout">Déconnexion</a>
+    </div>
+    
+    <div class="grid">
+        <div class="card">
+            <h3>⏱️ Ajouter du temps</h3>
+            <input type="email" id="addEmail" placeholder="Email utilisateur">
+            <input type="number" id="addDays" placeholder="Nombre de jours" min="1">
+            <button onclick="addTime()">Ajouter</button>
+        </div>
+        
+        <div class="card">
+            <h3>🚫 Bloquer/Débloquer</h3>
+            <input type="email" id="blockEmail" placeholder="Email utilisateur">
+            <button onclick="blockUser()" class="danger">Bloquer</button>
+            <button onclick="unblockUser()">Débloquer</button>
+        </div>
+        
+        <div class="card">
+            <h3>📊 Accès rapide</h3>
+            <a href="/live" style="color: #00ff88;">→ Voir les prédictions live</a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>👥 Utilisateurs</h3>
+        <div id="usersList">Chargement...</div>
+    </div>
+    
+    <script>
+        async function loadUsers() {
+            const res = await fetch('/api/admin/users');
+            const data = await res.json();
+            const div = document.getElementById('usersList');
+            if (!data.users || data.users.length === 0) {
+                div.innerHTML = '<p>Aucun utilisateur</p>';
+                return;
+            }
+            let html = '<table><tr><th>Email</th><th>Statut</th><th>Expiration</th></tr>';
+            data.users.forEach(u => {
+                const status = u.is_blocked ? '<span class="status-blocked">Bloqué</span>' : 
+                              u.is_active ? '<span class="status-active">Actif</span>' : 
+                              '<span class="status-expired">Expiré</span>';
+                html += `<tr>
+                    <td>${u.email}</td>
+                    <td>${status}</td>
+                    <td>${u.subscription_end || 'N/A'}</td>
+                </tr>`;
+            });
+            html += '</table>';
+            div.innerHTML = html;
+        }
+        
+        async function addTime() {
+            const email = document.getElementById('addEmail').value;
+            const days = document.getElementById('addDays').value;
+            if (!email || !days) return alert('Remplissez tous les champs');
+            
+            const res = await fetch('/api/admin/add-time', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, days: parseInt(days)})
+            });
+            const data = await res.json();
+            alert(data.message || data.error);
+            loadUsers();
+        }
+        
+        async function blockUser() {
+            const email = document.getElementById('blockEmail').value;
+            if (!email) return;
+            const res = await fetch('/api/admin/block', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, action: 'block'})
+            });
+            const data = await res.json();
+            alert(data.message || data.error);
+            loadUsers();
+        }
+        
+        async function unblockUser() {
+            const email = document.getElementById('blockEmail').value;
+            if (!email) return;
+            const res = await fetch('/api/admin/block', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, action: 'unblock'})
+            });
+            const data = await res.json();
+            alert(data.message || data.error);
+            loadUsers();
+        }
+        
+        async function logout() {
+            await fetch('/api/logout', {method: 'POST'});
+            window.location.href = '/';
+        }
+        
+        loadUsers();
+    </script>
+</body>
+</html>"""
+    return web.Response(text=html, content_type='text/html')
+
+# ============================================================
+# API ROUTES
+# ============================================================
+
+async def api_login(request):
+    """API connexion"""
+    try:
+        data = await request.json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return web.json_response({'success': False, 'error': 'Champs requis'})
+        
+        result = login_user(email, password)
+        if result['success']:
+            # Créer session
+            response = web.json_response({'success': True})
+            # TODO: Implémenter les cookies de session si nécessaire
+            return response
+        else:
+            return web.json_response({'success': False, 'error': result.get('error', 'Erreur')})
+    except Exception as e:
+        logger.error(f"Erreur login: {e}")
+        return web.json_response({'success': False, 'error': str(e)})
+
+async def api_register(request):
+    """API inscription"""
+    try:
+        data = await request.json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return web.json_response({'success': False, 'error': 'Champs requis'})
+        
+        result = register_user(email, password)
+        return web.json_response(result)
+    except Exception as e:
+        logger.error(f"Erreur register: {e}")
+        return web.json_response({'success': False, 'error': str(e)})
+
+async def api_logout(request):
+    """API déconnexion"""
+    return web.json_response({'success': True})
+
+async def api_predictions(request):
+    """API liste prédictions utilisateur"""
+    # TODO: Vérifier session et retourner prédictions
+    return web.json_response({'predictions': []})
+
+async def api_admin_login(request):
+    """API connexion admin"""
+    try:
+        data = await request.json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if check_admin_credentials(email, password):
+            return web.json_response({'success': True})
+        else:
+            return web.json_response({'success': False, 'error': 'Accès refusé'})
+    except Exception as e:
+        return web.json_response({'success': False, 'error': str(e)})
+
+async def api_admin_users(request):
+    """API liste utilisateurs"""
+    try:
+        users = get_all_users()
+        return web.json_response({'users': users})
+    except Exception as e:
+        logger.error(f"Erreur users: {e}")
+        return web.json_response({'users': []})
+
+async def api_admin_add_time(request):
+    """API ajouter temps"""
+    try:
+        data = await request.json()
+        email = data.get('email')
+        days = data.get('days', 0)
+        
+        if not email or days <= 0:
+            return web.json_response({'success': False, 'error': 'Paramètres invalides'})
+        
+        user = get_user_by_email(email)
+        if not user:
+            return web.json_response({'success': False, 'error': 'Utilisateur non trouvé'})
+        
+        add_subscription_time(user['id'], days)
+        return web.json_response({'success': True, 'message': f'{days} jours ajoutés à {email}'})
+    except Exception as e:
+        return web.json_response({'success': False, 'error': str(e)})
+
+async def api_admin_block(request):
+    """API bloquer/débloquer"""
+    try:
+        data = await request.json()
+        email = data.get('email')
+        action = data.get('action')
+        
+        if not email:
+            return web.json_response({'success': False, 'error': 'Email requis'})
+        
+        user = get_user_by_email(email)
+        if not user:
+            return web.json_response({'success': False, 'error': 'Utilisateur non trouvé'})
+        
+        if action == 'block':
+            block_user(user['id'])
+            return web.json_response({'success': True, 'message': f'{email} bloqué'})
+        else:
+            unblock_user(user['id'])
+            return web.json_response({'success': True, 'message': f'{email} débloqué'})
+    except Exception as e:
+        return web.json_response({'success': False, 'error': str(e)})
+
+# ============================================================
+# ROUTES PRÉDICTIONS TEMPS RÉEL
+# ============================================================
+
 async def api_predictions_status(request):
     """API pour statut des prédictions en temps réel"""
     try:
@@ -86,7 +703,6 @@ async def api_predictions_status(request):
         logger.error(f"Erreur API predictions: {e}")
         return web.json_response({'error': str(e)}, status=500)
 
-# 🔧 NOUVEAU: Page web temps réel
 async def predictions_live(request):
     """Page web temps réel des prédictions"""
     html = """<!DOCTYPE html>
@@ -228,9 +844,9 @@ async def predictions_live(request):
     
     return web.Response(text=rendered, content_type='text/html')
 
-def render_template_string(template, **kwargs):
-    from jinja2 import Template
-    return Template(template).render(**kwargs)
+# ============================================================
+# SETUP APPLICATION
+# ============================================================
 
 def setup_web_app(bot_clients):
     app = web.Application()
@@ -239,20 +855,22 @@ def setup_web_app(bot_clients):
     bot_client = bot_clients.get('user')
     admin_bot_client = bot_clients.get('admin')
     
-    # Routes existantes...
+    # Routes pages
     app.router.add_get('/', index)
     app.router.add_get('/login', login_page)
     app.router.add_get('/register', register_page)
+    
+    # Routes API auth
     app.router.add_post('/api/login', api_login)
     app.router.add_post('/api/register', api_register)
     app.router.add_post('/api/logout', api_logout)
     app.router.add_get('/api/predictions', api_predictions)
     
-    # 🔧 NOUVEAU: Routes pour prédictions temps réel
+    # Routes prédictions temps réel
     app.router.add_get('/live', predictions_live)
     app.router.add_get('/api/predictions-status', api_predictions_status)
     
-    # Admin routes...
+    # Routes admin
     app.router.add_get('/admin/login', admin_login_page)
     app.router.add_post('/api/admin/login', api_admin_login)
     app.router.add_get('/admin', admin_dashboard)
@@ -260,6 +878,7 @@ def setup_web_app(bot_clients):
     app.router.add_post('/api/admin/add-time', api_admin_add_time)
     app.router.add_post('/api/admin/block', api_admin_block)
     
+    # Static files
     app.router.add_static('/static/', path='static', name='static')
     
     return app
