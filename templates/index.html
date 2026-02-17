@@ -9,6 +9,9 @@
 <body>
     <!-- Timer abonnement -->
     <div class="timer-display" id="timerDisplay">
+        <div style="font-weight: bold; font-size: 1.2em; margin-bottom: 5px;">
+            {{ user.first_name }} {{ user.last_name }}
+        </div>
         <div class="timer-label" data-translate="time_remaining">Temps restant</div>
         <div class="timer-value" id="timerValue">--:--:--</div>
     </div>
@@ -67,9 +70,10 @@
         </div>
         
         <!-- Bloc PRÉDICTION Large -->
-        <div class="prediction-box" id="predictionBox" style="display: none;">
+        <div class="prediction-box" id="largePredictionBox" style="display: none;">
             <h3 id="largePredNumber">🎰 PRÉDICTION #---</h3>
             <p id="largePredSuit">🎯 Couleur: ---</p>
+            <p id="largePredStatus">📊 Statut: EN ATTENTE DU RÉSULTAT...</p>
         </div>
         
         <!-- Déconnexion -->
@@ -88,50 +92,12 @@
                 <div class="value" id="lostValue">0</div>
             </div>
         </div>
-        
-        <!-- Prédiction Active (dernière envoyée) -->
-        <div class="active-prediction" id="activePrediction" style="display: none;">
-            <div class="pred-title" data-translate="prediction">PRÉDICTION</div>
-            <div id="predictionContent" style="text-align: left; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-top: 10px; font-family: monospace; line-height: 1.5;">
-                🎰 PRÉDICTION <span id="predNumber">#---</span><br>
-                🎯 Couleur: <span id="predSuit">---</span><br>
-                ⏳ Statut: <span id="predStatus">EN ATTENTE DU RÉSULTAT...</span>
-            </div>
-            <div class="pred-rattrapage" id="predRattrapage" style="display: none;"></div>
-            <div class="pred-time" id="predTime" style="margin-top: 10px; font-size: 0.8em; opacity: 0.6;">--:--:--</div>
-        </div>
-        
-        <!-- Historique -->
-        <div class="history-section">
-            <div class="history-title" data-translate="history">Historique</div>
-            <div class="history-grid" id="historyGrid">
-                <!-- Rempli par JS -->
-            </div>
-        </div>
-        
-        <!-- Export/Import -->
-        <div class="export-import">
-            <button class="btn-export" data-translate="export">
-                💾 Exporter
-            </button>
-            <button class="btn-import" data-translate="import">
-                📁 Importer
-            </button>
-        </div>
-        
-        <!-- Social -->
-        <div class="social-links">
-            <button class="btn-social btn-telegram" data-translate="telegram">
-                ✈️ Telegram
-            </button>
-            <button class="btn-social btn-whatsapp" data-translate="whatsapp">
-                📱 WhatsApp
-            </button>
-        </div>
+
+        <!-- Bloc PRÉDICTION Large -->
         
         <!-- Footer -->
         <div class="footer">
-            © 2025 <span data-translate="footer">Prédicteur Baccara</span>
+            développeur par Sossou Kouamé appolinaire+2290195501564
         </div>
     </div>
 
