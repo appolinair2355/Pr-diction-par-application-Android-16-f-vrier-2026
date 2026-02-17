@@ -295,6 +295,28 @@ body {
     border: 1px solid rgba(255, 65, 108, 0.3);
 }
 
+.prediction-box {
+    width: 100%;
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    text-align: center;
+    color: white;
+    font-size: 18px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    box-sizing: border-box;
+}
+
+.prediction-box h3 {
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+.prediction-box p {
+    font-size: 18px;
+}
+
 .stat-half .label {
     font-size: 0.9em;
     opacity: 0.95;
