@@ -6,6 +6,7 @@ import logging
 from aiohttp import web
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from datetime import datetime
+from telethon import events
 
 from database import (
     add_subscription_time, get_all_users, block_user, 
@@ -330,10 +331,17 @@ Exemple: /add_time user@email.com 7""")
     except Exception as e:
         await event.reply(f"❌ Erreur: {e}")
 
+@web.middleware
+async def cache_control_middleware(request, handler):
+    response = await handler(request)
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 def setup_web_app(bot_clients):
-    app = web.Application()
+    app = web.Application(middlewares=[cache_control_middleware])
     
-    # Stocker les clients
     global bot_client, admin_bot_client
     bot_client = bot_clients.get('user')
     admin_bot_client = bot_clients.get('admin')
