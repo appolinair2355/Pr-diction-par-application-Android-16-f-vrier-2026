@@ -10,6 +10,7 @@ const TRANSLATIONS = {
         disconnect: 'Déconnexion',
         won: 'Gagnants',
         lost: 'Perdus',
+        prediction: 'PRÉDICTION',
         predict: 'Prédire',
         clear: 'Effacer',
         current_pred: 'PRÉDICTION EN COURS',

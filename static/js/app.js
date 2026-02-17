@@ -81,26 +81,25 @@ function renderHistory(predictions) {
 }
 
 function updateActivePrediction(predictions) {
-    // Trouver la dernière prédiction envoyée (pas en attente de résultat)
-    const lastSent = predictions.filter(p => p.status === '⏳').pop();
+    // Trouver la prédiction en attente (statut ⏳)
+    const active = predictions.find(p => p.status === '⏳');
     
+    const activePredictionDiv = document.getElementById('activePrediction');
     const numberEl = document.getElementById('predNumber');
     const suitEl = document.getElementById('predSuit');
-    const rattrapageEl = document.getElementById('predRattrapage');
+    const statusEl = document.getElementById('predStatus');
     const timeEl = document.getElementById('predTime');
     
-    if (!lastSent) {
-        numberEl.textContent = '---';
-        suitEl.textContent = '---';
-        rattrapageEl.textContent = '';
-        timeEl.textContent = '--:--:--';
+    if (!active) {
+        activePredictionDiv.style.display = 'none';
         return;
     }
     
-    numberEl.textContent = `#N${lastSent.game_number}`;
-    suitEl.innerHTML = `<span class="${getSuitClass(lastSent.suit)}">${getSuitDisplay(lastSent.suit)}</span>`;
-    rattrapageEl.textContent = lastSent.rattrapage > 0 ? `[R+${lastSent.rattrapage}]` : '[R+3]';
-    timeEl.textContent = lastSent.time_str;
+    activePredictionDiv.style.display = 'block';
+    numberEl.textContent = `#${active.game_number}`;
+    suitEl.textContent = getSuitDisplay(active.suit);
+    statusEl.textContent = 'EN ATTENTE DU RÉSULTAT...';
+    timeEl.textContent = active.time_str;
 }
 
 function startSubscriptionTimer() {
@@ -168,8 +167,14 @@ async function fetchData() {
         document.getElementById('winRateValue').textContent = data.win_rate + '%';
         document.getElementById('wonValue').textContent = data.won_predictions;
         document.getElementById('lostValue').textContent = data.lost_predictions;
+        document.getElementById('topWonCount').textContent = data.won_predictions;
+        document.getElementById('topLostCount').textContent = data.lost_predictions;
         document.getElementById('progressHeader').textContent = 
             `${data.won_predictions + data.lost_predictions} / ${data.total_predictions}`;
+        
+        if (data.last_source_game) {
+            document.getElementById('sourceGameNumber').textContent = '#' + data.last_source_game;
+        }
         
         // Mettre à jour la prédiction active
         updateActivePrediction(data.predictions);
