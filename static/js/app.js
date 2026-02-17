@@ -42,14 +42,27 @@ function changeLang(lang) {
     localStorage.setItem('preferred_lang', lang);
 }
 
+// Fonction pour obtenir le nom traduit de la couleur
 function getSuitDisplay(suit) {
-    const displays = {
-        '♠': '♠️ Pique',
-        '♥': '❤️ Cœur',
-        '♦': '♦️ Carreau',
-        '♣': '♣️ Trèfle'
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr;
+    
+    // Mapping des symboles vers les clés de traduction
+    const suitMap = {
+        '♠': t.spade || 'Pique',
+        '♥': t.heart || 'Cœur',
+        '♦': t.diamond || 'Carreau',
+        '♣': t.club || 'Trèfle'
     };
-    return displays[suit] || suit;
+    
+    // Retourner le symbole + nom traduit
+    const suitSymbols = {
+        '♠': '♠️',
+        '♥': '❤️',
+        '♦': '♦️',
+        '♣': '♣️'
+    };
+    
+    return `${suitSymbols[suit] || suit} ${suitMap[suit] || suit}`;
 }
 
 function getSuitClass(suit) {
@@ -82,15 +95,18 @@ function updateActivePrediction(predictions) {
         return;
     }
     
+    // Récupérer les traductions
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr;
+    
     // Bloc standard (caché comme demandé pour ne voir que le live large)
     if (activePredictionDiv) activePredictionDiv.style.display = 'none';
     
-    // Nouveau Bloc Large - Affichage en temps réel
+    // Nouveau Bloc Large - Affichage en temps réel avec traductions
     if (largePredictionBox) {
         largePredictionBox.style.display = 'block';
-        largePredNumber.textContent = `🎰 PRÉDICTION #${active.game_number}`;
-        largePredSuit.textContent = `🎯 Couleur: ${getSuitDisplay(active.suit)}`;
-        largePredStatus.textContent = `📊 Statut: EN ATTENTE DU RÉSULTAT...`;
+        largePredNumber.textContent = `🎰 ${t.prediction || 'PRÉDICTION'} #${active.game_number}`;
+        largePredSuit.textContent = `🎯 ${t.color || 'Couleur'}: ${getSuitDisplay(active.suit)}`;
+        largePredStatus.textContent = `📊 ${t.status || 'Statut'}: ${t.waiting_result || 'EN ATTENTE DU RÉSULTAT...'}`;
     }
 }
 
@@ -187,4 +203,6 @@ async function logout() {
 // Gestionnaire de sélection de langue
 document.getElementById('langSelect')?.addEventListener('change', (e) => {
     changeLang(e.target.value);
+    // Rafraîchir immédiatement l'affichage de la prédiction avec la nouvelle langue
+    fetchData();
 });
