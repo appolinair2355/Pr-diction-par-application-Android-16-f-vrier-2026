@@ -14,6 +14,9 @@ const TRANSLATIONS = {
         predict: 'Prédire',
         clear: 'Effacer',
         current_pred: 'PRÉDICTION EN COURS',
+        color: 'Couleur',
+        status: 'Statut',
+        waiting_result: 'EN ATTENTE DU RÉSULTAT...',
         history: 'Historique',
         export: 'Exporter Historique',
         import: 'Importer Historique',
@@ -43,7 +46,12 @@ const TRANSLATIONS = {
         add_time: 'Ajouter du temps',
         block: 'Bloquer',
         time_added: 'Temps ajouté',
-        subscription_active: 'Abonnement actif'
+        subscription_active: 'Abonnement actif',
+        // Noms des couleurs
+        spade: 'Pique',
+        heart: 'Cœur',
+        diamond: 'Carreau',
+        club: 'Trèfle'
     },
     
     en: {
@@ -56,6 +64,9 @@ const TRANSLATIONS = {
         predict: 'Predict',
         clear: 'Clear',
         current_pred: 'CURRENT PREDICTION',
+        color: 'Color',
+        status: 'Status',
+        waiting_result: 'WAITING FOR RESULT...',
         history: 'History',
         export: 'Export History',
         import: 'Import History',
@@ -85,7 +96,12 @@ const TRANSLATIONS = {
         add_time: 'Add Time',
         block: 'Block',
         time_added: 'Time added',
-        subscription_active: 'Subscription active'
+        subscription_active: 'Subscription active',
+        // Noms des couleurs
+        spade: 'Spade',
+        heart: 'Heart',
+        diamond: 'Diamond',
+        club: 'Club'
     },
     
     es: {
@@ -98,6 +114,9 @@ const TRANSLATIONS = {
         predict: 'Predecir',
         clear: 'Borrar',
         current_pred: 'PREDICCIÓN ACTUAL',
+        color: 'Color',
+        status: 'Estado',
+        waiting_result: 'ESPERANDO RESULTADO...',
         history: 'Historial',
         export: 'Exportar Historial',
         import: 'Importar Historial',
@@ -127,7 +146,12 @@ const TRANSLATIONS = {
         add_time: 'Añadir tiempo',
         block: 'Bloquear',
         time_added: 'Tiempo añadido',
-        subscription_active: 'Suscripción activa'
+        subscription_active: 'Suscripción activa',
+        // Noms des couleurs
+        spade: 'Pica',
+        heart: 'Corazón',
+        diamond: 'Diamante',
+        club: 'Trébol'
     },
     
     ru: {
@@ -140,6 +164,9 @@ const TRANSLATIONS = {
         predict: 'Предсказать',
         clear: 'Очистить',
         current_pred: 'ТЕКУЩЕЕ ПРЕДСКАЗАНИЕ',
+        color: 'Цвет',
+        status: 'Статус',
+        waiting_result: 'ОЖИДАНИЕ РЕЗУЛЬТАТА...',
         history: 'История',
         export: 'Экспорт истории',
         import: 'Импорт истории',
@@ -169,7 +196,12 @@ const TRANSLATIONS = {
         add_time: 'Добавить время',
         block: 'Заблокировать',
         time_added: 'Время добавлено',
-        subscription_active: 'Подписка активна'
+        subscription_active: 'Подписка активна',
+        // Noms des couleurs
+        spade: 'Пика',
+        heart: 'Черва',
+        diamond: 'Бубна',
+        club: 'Трефа'
     },
     
     de: {
@@ -182,6 +214,9 @@ const TRANSLATIONS = {
         predict: 'Vorhersagen',
         clear: 'Löschen',
         current_pred: 'AKTUELLE VORHERSAGE',
+        color: 'Farbe',
+        status: 'Status',
+        waiting_result: 'WARTE AUF ERGEBNIS...',
         history: 'Verlauf',
         export: 'Verlauf exportieren',
         import: 'Verlauf importieren',
@@ -211,7 +246,12 @@ const TRANSLATIONS = {
         add_time: 'Zeit hinzufügen',
         block: 'Sperren',
         time_added: 'Zeit hinzugefügt',
-        subscription_active: 'Abonnement aktiv'
+        subscription_active: 'Abonnement aktiv',
+        // Noms des couleurs
+        spade: 'Pik',
+        heart: 'Herz',
+        diamond: 'Karo',
+        club: 'Kreuz'
     },
     
     it: {
@@ -224,6 +264,9 @@ const TRANSLATIONS = {
         predict: 'Predici',
         clear: 'Cancella',
         current_pred: 'PREDIZIONE CORRENTE',
+        color: 'Colore',
+        status: 'Stato',
+        waiting_result: 'IN ATTESA DEL RISULTATO...',
         history: 'Cronologia',
         export: 'Esporta Cronologia',
         import: 'Importa Cronologia',
@@ -253,7 +296,12 @@ const TRANSLATIONS = {
         add_time: 'Aggiungi tempo',
         block: 'Blocca',
         time_added: 'Tempo aggiunto',
-        subscription_active: 'Abbonamento attivo'
+        subscription_active: 'Abbonamento attivo',
+        // Noms des couleurs
+        spade: 'Picche',
+        heart: 'Cuori',
+        diamond: 'Quadri',
+        club: 'Fiori'
     },
     
     pt: {
@@ -266,6 +314,9 @@ const TRANSLATIONS = {
         predict: 'Prever',
         clear: 'Limpar',
         current_pred: 'PREVISÃO ATUAL',
+        color: 'Cor',
+        status: 'Status',
+        waiting_result: 'AGUARDANDO RESULTADO...',
         history: 'Histórico',
         export: 'Exportar Histórico',
         import: 'Importar Histórico',
@@ -295,7 +346,12 @@ const TRANSLATIONS = {
         add_time: 'Adicionar tempo',
         block: 'Bloquear',
         time_added: 'Tempo adicionado',
-        subscription_active: 'Assinatura ativa'
+        subscription_active: 'Assinatura ativa',
+        // Noms des couleurs
+        spade: 'Espadas',
+        heart: 'Copas',
+        diamond: 'Ouros',
+        club: 'Paus'
     },
     
     ar: {
@@ -308,6 +364,9 @@ const TRANSLATIONS = {
         predict: 'تنبؤ',
         clear: 'مسح',
         current_pred: 'التنبؤ الحالي',
+        color: 'اللون',
+        status: 'الحالة',
+        waiting_result: 'في انتظار النتيجة...',
         history: 'السجل',
         export: 'تصدير السجل',
         import: 'استيراد السجل',
@@ -337,7 +396,12 @@ const TRANSLATIONS = {
         add_time: 'إضافة وقت',
         block: 'حظر',
         time_added: 'تم إضافة الوقت',
-        subscription_active: 'الاشتراك نشط'
+        subscription_active: 'الاشتراك نشط',
+        // Noms des couleurs
+        spade: 'بيك',
+        heart: 'قلب',
+        diamond: 'ديناري',
+        club: ' Trebol'
     },
     
     zh: {
@@ -350,6 +414,9 @@ const TRANSLATIONS = {
         predict: '预测',
         clear: '清除',
         current_pred: '当前预测',
+        color: '颜色',
+        status: '状态',
+        waiting_result: '等待结果...',
         history: '历史记录',
         export: '导出历史',
         import: '导入历史',
@@ -379,7 +446,12 @@ const TRANSLATIONS = {
         add_time: '添加时间',
         block: '封锁',
         time_added: '时间已添加',
-        subscription_active: '订阅有效'
+        subscription_active: '订阅有效',
+        // Noms des couleurs
+        spade: '黑桃',
+        heart: '红桃',
+        diamond: '方块',
+        club: '梅花'
     }
 };
 
