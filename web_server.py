@@ -155,12 +155,37 @@ async def api_predictions(request):
     
     won, lost = get_prediction_stats()
     
-    # Log pour vérifier les valeurs envoyées à l'API
-    # logger.info(f"API Debug: current={bot_state.current_game_number}, last={bot_state.last_source_game_number}")
+    # Pause info
+    pause_info = None
+    if bot_state.pause_config:
+        remaining_before_pause = 4 - bot_state.pause_config['predictions_count']
+        is_paused = bot_state.pause_config['is_paused']
+        remaining_pause_time = "--:--"
+        
+        if is_paused and bot_state.pause_config['pause_end_time']:
+            try:
+                end_time = datetime.fromisoformat(bot_state.pause_config['pause_end_time'])
+                diff = end_time - datetime.now()
+                if diff.total_seconds() > 0:
+                    minutes = int(diff.total_seconds() // 60)
+                    seconds = int(diff.total_seconds() % 60)
+                    remaining_pause_time = f"{minutes:02d}:{seconds:02d}"
+                else:
+                    is_paused = False
+            except:
+                pass
+        
+        pause_info = {
+            'remaining_before_pause': max(0, remaining_before_pause),
+            'is_paused': is_paused,
+            'remaining_pause_time': remaining_pause_time
+        }
     
     sub_end = session.get('subscription_end')
     if sub_end and hasattr(sub_end, 'isoformat'):
         sub_end_str = sub_end.isoformat()
+    elif isinstance(sub_end, str):
+        sub_end_str = sub_end
     else:
         sub_end_str = str(sub_end) if sub_end else None
     
@@ -172,6 +197,7 @@ async def api_predictions(request):
         'win_rate': round((won / (won + lost) * 100), 1) if (won + lost) > 0 else 0,
         'current_game': bot_state.current_game_number or bot_state.last_source_game_number,
         'last_source_game': bot_state.last_source_game_number,
+        'pause_info': pause_info,
         'user': {
             'first_name': session['first_name'],
             'subscription_end': sub_end_str
@@ -267,6 +293,23 @@ async def api_admin_block(request):
     
     return web.json_response({'success': True})
 
+async def api_admin_create_user(request):
+    if not request.cookies.get('admin_session'):
+        return web.json_response({'error': 'unauthorized'}, status=401)
+    
+    data = await request.json()
+    from database import create_user
+    user = create_user(
+        data.get('email'),
+        data.get('password'),
+        data.get('first_name'),
+        data.get('last_name')
+    )
+    
+    if user:
+        return web.json_response({'success': True, 'user': user})
+    return web.json_response({'error': 'creation_failed'}, status=400)
+
 # ============ COMMANDES TELEGRAM ADMIN ============
 
 async def handle_admin_commands(event):
@@ -341,6 +384,13 @@ Exemple: /add_time user@email.com 7""")
 📈 Win Rate: {get_win_rate()}%
 🎮 Jeu actuel: #{bot_state.current_game_number}""")
             
+        elif command == '/log':
+            if event.message.photo:
+                await event.message.download_media("static/logo.png")
+                await event.reply("✅ Logo mis à jour avec succès ! Le changement sera visible au prochain rafraîchissement de la page.")
+            else:
+                await event.reply("📷 Veuillez envoyer l'image avec la commande /log en légende.")
+            
     except Exception as e:
         await event.reply(f"❌ Erreur: {e}")
 
@@ -383,6 +433,7 @@ def setup_web_app(bot_clients):
     app.router.add_get('/api/admin/users', api_admin_users)
     app.router.add_post('/api/admin/add-time', api_admin_add_time)
     app.router.add_post('/api/admin/block', api_admin_block)
+    app.router.add_post('/api/admin/create-user', api_admin_create_user)
     
     # Static
     app.router.add_static('/static/', path='static', name='static')

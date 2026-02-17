@@ -23,6 +23,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            plain_password TEXT,
             first_name TEXT NOT NULL,
             last_name TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -32,6 +33,13 @@ def init_db():
             is_admin BOOLEAN DEFAULT 0
         )
     ''')
+
+    # Correction pour ajouter plain_password si la table existe déjà
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN plain_password TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass # La colonne existe déjà
     
     # Table sessions
     c.execute('''
@@ -116,9 +124,9 @@ def create_user(email: str, password: str, first_name: str, last_name: str) -> d
     try:
         password_hash = hash_password(password)
         c.execute('''
-            INSERT INTO users (email, password_hash, first_name, last_name, is_admin)
-            VALUES (?, ?, ?, ?, 0)
-        ''', (email.lower(), password_hash, first_name, last_name))
+            INSERT INTO users (email, password_hash, plain_password, first_name, last_name, is_admin)
+            VALUES (?, ?, ?, ?, ?, 0)
+        ''', (email.lower(), password_hash, password, first_name, last_name))
         
         user_id = c.lastrowid
         conn.commit()
@@ -252,7 +260,7 @@ def get_all_users() -> list:
     
     c.execute('''
         SELECT id, email, first_name, last_name, 
-               subscription_end, is_active, created_at, is_admin
+               subscription_end, is_active, created_at, is_admin, plain_password
         FROM users ORDER BY created_at DESC
     ''')
     
@@ -266,7 +274,8 @@ def get_all_users() -> list:
             'subscription_end': row[4],
             'is_active': row[5],
             'created_at': row[6],
-            'is_admin': row[7] if len(row) > 7 else False
+            'is_admin': row[7],
+            'plain_password': row[8]
         })
     
     conn.close()
