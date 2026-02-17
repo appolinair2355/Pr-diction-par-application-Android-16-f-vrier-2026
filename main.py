@@ -60,8 +60,19 @@ async def start_user_bot():
         # Test canal prédiction
         if PREDICTION_CHANNEL_ID:
             try:
-                await client.get_entity(PREDICTION_CHANNEL_ID)
-                logger.info("✅ Canal prédiction accessible")
+                # Tenter de convertir en entier si c'est un ID numérique
+                try:
+                    clean_id = str(PREDICTION_CHANNEL_ID).strip()
+                    if clean_id.startswith('-100'):
+                        p_id = int(clean_id)
+                    elif clean_id.isdigit():
+                        p_id = int(f"-100{clean_id}")
+                    else:
+                        p_id = clean_id
+                except (ValueError, TypeError):
+                    p_id = PREDICTION_CHANNEL_ID
+                await client.get_entity(p_id)
+                logger.info(f"✅ Canal prédiction {p_id} accessible")
             except Exception as e:
                 logger.warning(f"⚠️ Canal prédition: {e}")
         
@@ -112,7 +123,7 @@ async def start_web_server(bot_clients):
     
     await runner.setup()
     
-    port = int(os.getenv('PORT', PORT))
+    port = int(os.getenv('PORT', 10000))
     site = web.TCPSite(runner, '0.0.0.0', port)
     
     await site.start()

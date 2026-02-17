@@ -151,14 +151,18 @@ async def api_predictions(request):
         return web.json_response({'error': 'unauthorized'}, status=401)
     
     from bot_logic import state as bot_state
+    from database import get_prediction_stats
+    
+    won, lost = get_prediction_stats()
     
     data = {
         'predictions': list(bot_state.prediction_history),
-        'total_predictions': bot_state.total_predictions,
-        'won_predictions': bot_state.won_predictions,
-        'lost_predictions': bot_state.lost_predictions,
-        'win_rate': get_win_rate(),
+        'total_predictions': won + lost,
+        'won_predictions': won,
+        'lost_predictions': lost,
+        'win_rate': round((won / (won + lost) * 100), 1) if (won + lost) > 0 else 0,
         'current_game': bot_state.current_game_number,
+        'last_source_game': bot_state.last_source_game_number,
         'user': {
             'first_name': session['first_name'],
             'subscription_end': session['subscription_end'].isoformat() if session['subscription_end'] else None

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 # ID Canal prédiction (fixe)
-PREDICTION_CHANNEL_ID = -1003579400443
+PREDICTION_CHANNEL_ID = -1002543915361
 
 # Variables globales partagées
 class BotState:
@@ -65,9 +65,18 @@ state = BotState()
 # ============================================================
 
 def extract_game_number(message: str):
+    """Extrait le numéro du jeu du message source"""
+    # Recherche format #N123 ou #N 123
     match = re.search(r"#N\s*(\d+)", message, re.IGNORECASE)
     if match:
         return int(match.group(1))
+    
+    # Recherche format ( #N123 )
+    match = re.search(r"\(\s*#N\s*(\d+)", message, re.IGNORECASE)
+    if match:
+        return int(match.group(1))
+
+    # Fallback sur un numéro de 3-4 chiffres
     match = re.search(r"\b(\d{3,4})\b", message)
     if match:
         return int(match.group(1))
@@ -125,6 +134,8 @@ def get_suit_for_number(number):
 
 def is_trigger_number(number):
     """Déclencheur: impair finissant par 1,3,5,7 ET suivant est pair valide"""
+    if number is None:
+        return False
     if number % 2 == 0:
         return False
     last_digit = number % 10
@@ -150,13 +161,31 @@ async def send_prediction_to_channel(target_game: int, predicted_suit: str, base
         return None
     
     try:
-        channel_id = PREDICTION_CHANNEL_ID
+        # Tenter de convertir en entier si possible (ID numérique)
+        try:
+            # Nettoyage de l'ID (certains utilisateurs mettent des espaces ou des tirets mal placés)
+            clean_id = str(PREDICTION_CHANNEL_ID).strip()
+            if clean_id.startswith('-100'):
+                channel_id = int(clean_id)
+            elif clean_id.isdigit():
+                channel_id = int(f"-100{clean_id}")
+            else:
+                channel_id = clean_id
+        except (ValueError, TypeError):
+            channel_id = PREDICTION_CHANNEL_ID
         
         prediction_msg = f"""🎰 **PRÉDICTION #{target_game}**
 🎯 **Couleur:** {SUIT_DISPLAY.get(predicted_suit, predicted_suit)}
 ⏳ **Statut:** EN ATTENTE DU RÉSULTAT..."""
         
-        pred_msg = await state.client.send_message(channel_id, prediction_msg)
+        # S'assurer que le client a l'entité
+        try:
+            entity = await state.client.get_entity(channel_id)
+            pred_msg = await state.client.send_message(entity, prediction_msg)
+        except Exception as e:
+            logger.error(f"❌ Erreur envoi (tentative fallback): {e}")
+            # Fallback direct avec l'ID si get_entity échoue
+            pred_msg = await state.client.send_message(channel_id, prediction_msg)
         
         state.verification_state = {
             'predicted_number': target_game,
@@ -204,6 +233,10 @@ async def update_prediction_status(status: str):
         else:
             status_text = f"{status} GAGNÉ"
             state.won_predictions += 1
+        
+        # Log to database
+        from database import log_prediction
+        log_prediction(predicted_num, predicted_suit, "WON" if "GAGNÉ" in status_text else "LOST")
         
         updated_msg = f"""🎰 **PRÉDICTION #{predicted_num}**
 🎯 **Couleur:** {SUIT_DISPLAY.get(predicted_suit, predicted_suit)}
@@ -432,6 +465,16 @@ async def handle_edited_message(event, config, source_ids):
 def setup_handlers(client, config, source_ids):
     """Configure les gestionnaires d'événements"""
     state.client = client
+    
+    # 🔧 Update initial stats from database
+    try:
+        from database import get_prediction_stats
+        won, lost = get_prediction_stats()
+        state.won_predictions = won
+        state.lost_predictions = lost
+        state.total_predictions = won + lost
+    except Exception as e:
+        logger.error(f"Error loading stats: {e}")
     
     @client.on(events.NewMessage(pattern='/start'))
     async def cmd_start(event):

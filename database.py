@@ -281,6 +281,28 @@ def update_last_login(user_id: int):
     conn.commit()
     conn.close()
 
+def log_prediction(game_number: int, suit: str, status: str):
+    """Enregistre une prédiction dans la base de données"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO predictions_log (game_number, suit, status, resolved_at)
+        VALUES (?, ?, ?, ?)
+    ''', (game_number, suit, status, datetime.now()))
+    conn.commit()
+    conn.close()
+
+def get_prediction_stats():
+    """Récupère les statistiques globales des prédictions"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM predictions_log WHERE status = 'WON'")
+    won = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM predictions_log WHERE status = 'LOST'")
+    lost = c.fetchone()[0]
+    conn.close()
+    return won, lost
+
 def block_user(user_id: int):
     """Bloque un utilisateur"""
     conn = sqlite3.connect(DB_PATH)
