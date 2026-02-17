@@ -58,26 +58,7 @@ function getSuitClass(suit) {
 
 function renderHistory(predictions) {
     const grid = document.getElementById('historyGrid');
-    const recent = predictions.slice(-12).reverse();
-    
-    if (recent.length === 0) {
-        grid.innerHTML = '<p style="grid-column: 4; text-align: center; opacity: 0.5;">Aucune prédiction</p>';
-        return;
-    }
-    
-    grid.innerHTML = recent.map(pred => {
-        let statusClass = 'pending';
-        if (pred.status.includes('✅')) statusClass = 'won';
-        else if (pred.status.includes('❌')) statusClass = 'lost';
-        
-        return `
-            <div class="history-item ${statusClass}">
-                <div class="num">#${pred.game_number}</div>
-                <div class="suit ${getSuitClass(pred.suit)}">${pred.suit}</div>
-                <div class="time">${pred.time_str}</div>
-            </div>
-        `;
-    }).join('');
+    grid.innerHTML = '<p style="grid-column: 1/span 4; text-align: center; opacity: 0.5;">Historique désactivé</p>';
 }
 
 function updateActivePrediction(predictions) {
@@ -85,21 +66,32 @@ function updateActivePrediction(predictions) {
     const active = predictions.find(p => p.status === '⏳');
     
     const activePredictionDiv = document.getElementById('activePrediction');
+    const largePredictionBox = document.getElementById('largePredictionBox');
+    const largePredNumber = document.getElementById('largePredNumber');
+    const largePredSuit = document.getElementById('largePredSuit');
+    const largePredStatus = document.getElementById('largePredStatus');
+    
     const numberEl = document.getElementById('predNumber');
     const suitEl = document.getElementById('predSuit');
     const statusEl = document.getElementById('predStatus');
     const timeEl = document.getElementById('predTime');
     
     if (!active) {
-        activePredictionDiv.style.display = 'none';
+        if (activePredictionDiv) activePredictionDiv.style.display = 'none';
+        if (largePredictionBox) largePredictionBox.style.display = 'none';
         return;
     }
     
-    activePredictionDiv.style.display = 'block';
-    numberEl.textContent = `#${active.game_number}`;
-    suitEl.textContent = getSuitDisplay(active.suit);
-    statusEl.textContent = 'EN ATTENTE DU RÉSULTAT...';
-    timeEl.textContent = active.time_str;
+    // Bloc standard (caché comme demandé pour ne voir que le live large)
+    if (activePredictionDiv) activePredictionDiv.style.display = 'none';
+    
+    // Nouveau Bloc Large - Affichage en temps réel
+    if (largePredictionBox) {
+        largePredictionBox.style.display = 'block';
+        largePredNumber.textContent = `🎰 PRÉDICTION #${active.game_number}`;
+        largePredSuit.textContent = `🎯 Couleur: ${getSuitDisplay(active.suit)}`;
+        largePredStatus.textContent = `📊 Statut: EN ATTENTE DU RÉSULTAT...`;
+    }
 }
 
 function startSubscriptionTimer() {
