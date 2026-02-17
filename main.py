@@ -124,7 +124,7 @@ async def start_web_server(bot_clients):
     
     await runner.setup()
     
-    port = int(os.getenv('PORT', 10000))
+    port = int(os.getenv('PORT', 5000))
     site = web.TCPSite(runner, '0.0.0.0', port)
     
     await site.start()

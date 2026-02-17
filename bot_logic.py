@@ -643,6 +643,10 @@ Modifier: /pausecycle 3,5,4""")
     @client.on(events.NewMessage())
     async def on_message(event):
         await handle_message(event, config, source_ids)
+
+    @client.on(events.MessageEdited())
+    async def on_edited_message(event):
+        await handle_edited_message(event, config, source_ids)
     
     @client.on(events.MessageEdited())
     async def on_edited(event):
