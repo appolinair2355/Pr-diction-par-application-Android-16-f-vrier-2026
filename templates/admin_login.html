@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Prédicteur Baccarat</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="main-title" style="margin-bottom: 30px;">
+                <div class="icon">👑</div>
+                <h1>Administration</h1>
+            </div>
+            
+            <h2>Connexion Admin</h2>
+            
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" required placeholder="admin@email.com">
+                </div>
+                
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" name="password" required placeholder="••••••">
+                </div>
+                
+                <button type="submit" class="btn-auth">
+                    Se connecter
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('adminLoginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const form = new FormData(e.target);
+            
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                body: form
+            });
+            
+            if (res.ok) {
+                window.location = '/admin';
+            } else {
+                alert('Identifiants incorrects');
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abonnement expiré - Prédicteur Baccarat</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="main-title" style="margin-bottom: 30px;">
+                <div class="icon">⏰</div>
+                <h1>Abonnement expiré</h1>
+            </div>
+            
+            <p style="text-align: center; color: #ccc; margin-bottom: 20px;">
+                Bonjour <strong>{{ user.first_name }}</strong>, votre abonnement a expiré.
+                Contactez l'administrateur pour renouveler votre accès.
+            </p>
+            
+            <button class="btn-auth" onclick="logout()" style="background: #e74c3c;">
+                Déconnexion
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location = '/login';
+        }
+    </script>
+</body>
+</html>
