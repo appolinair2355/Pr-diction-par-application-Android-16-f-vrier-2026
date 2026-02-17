@@ -155,17 +155,26 @@ async def api_predictions(request):
     
     won, lost = get_prediction_stats()
     
+    # Log pour vérifier les valeurs envoyées à l'API
+    # logger.info(f"API Debug: current={bot_state.current_game_number}, last={bot_state.last_source_game_number}")
+    
+    sub_end = session.get('subscription_end')
+    if sub_end and hasattr(sub_end, 'isoformat'):
+        sub_end_str = sub_end.isoformat()
+    else:
+        sub_end_str = str(sub_end) if sub_end else None
+    
     data = {
         'predictions': list(bot_state.prediction_history),
         'total_predictions': won + lost,
         'won_predictions': won,
         'lost_predictions': lost,
         'win_rate': round((won / (won + lost) * 100), 1) if (won + lost) > 0 else 0,
-        'current_game': bot_state.current_game_number,
+        'current_game': bot_state.current_game_number or bot_state.last_source_game_number,
         'last_source_game': bot_state.last_source_game_number,
         'user': {
             'first_name': session['first_name'],
-            'subscription_end': session['subscription_end'].isoformat() if session['subscription_end'] else None
+            'subscription_end': sub_end_str
         },
         'timestamp': datetime.now().isoformat()
     }

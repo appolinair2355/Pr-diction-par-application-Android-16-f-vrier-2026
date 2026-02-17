@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 # ID Canal prédiction (fixe)
-PREDICTION_CHANNEL_ID = -1002543915361
+PREDICTION_CHANNEL_ID = -1003579400443
 
 # Variables globales partagées
 class BotState:
@@ -259,6 +259,10 @@ async def update_prediction_status(status: str):
             'channel_id': None, 'status': None, 'base_game': None
         }
         
+        # S'assurer que le numéro actuel est mis à jour
+        state.current_game_number = predicted_num
+        state.last_source_game_number = predicted_num
+        
         return True
         
     except Exception as e:
@@ -368,11 +372,15 @@ def is_message_editing(message: str) -> bool:
 async def process_source_message(message_text: str, chat_id: int, source_ids: dict, is_finalized=False, config=None):
     """Traite les messages du canal source avec prédiction automatique"""
     try:
+        # Log pour debug
+        logger.info(f"Traitement message source: chat_id={chat_id}, attendu={source_ids.get('SOURCE_CHANNEL_ID')}")
+        
         # Vérifier si c'est le canal source
-        if chat_id != source_ids.get('SOURCE_CHANNEL_ID'):
+        if str(chat_id) != str(source_ids.get('SOURCE_CHANNEL_ID')):
             return
         
         game_number = extract_game_number(message_text)
+        logger.info(f"Numéro de jeu extrait: {game_number}")
         if game_number is None:
             return
         
@@ -480,7 +488,14 @@ def setup_handlers(client, config, source_ids):
     async def cmd_start(event):
         if event.is_group or event.is_channel:
             return
-        if event.sender_id == config.get('ADMIN_ID'):
+        
+        sender_id = event.sender_id
+        admin_id = config.get('ADMIN_ID')
+        
+        # Log pour debug
+        logger.info(f"Debug /start: sender_id={sender_id} (type={type(sender_id)}), admin_id={admin_id} (type={type(admin_id)})")
+        
+        if str(sender_id) == str(admin_id):
             await event.respond("""👑 **ADMIN**
 
 Commandes:
@@ -497,21 +512,21 @@ Commandes:
     
     @client.on(events.NewMessage(pattern='/stop'))
     async def cmd_stop(event):
-        if event.sender_id != config.get('ADMIN_ID'):
+        if str(event.sender_id) != str(config.get('ADMIN_ID')):
             return
         state.predictions_enabled = False
         await event.respond("🛑 Prédictions ARRÊTÉES")
     
     @client.on(events.NewMessage(pattern='/resume'))
     async def cmd_resume(event):
-        if event.sender_id != config.get('ADMIN_ID'):
+        if str(event.sender_id) != str(config.get('ADMIN_ID')):
             return
         state.predictions_enabled = True
         await event.respond("🚀 Prédictions REPRISES")
     
     @client.on(events.NewMessage(pattern='/forcestop'))
     async def cmd_forcestop(event):
-        if event.sender_id != config.get('ADMIN_ID'):
+        if str(event.sender_id) != str(config.get('ADMIN_ID')):
             return
         state.predictions_enabled = False
         old = state.verification_state['predicted_number']
@@ -524,7 +539,7 @@ Commandes:
     
     @client.on(events.NewMessage(pattern='/predictinfo'))
     async def cmd_predictinfo(event):
-        if event.sender_id != config.get('ADMIN_ID'):
+        if str(event.sender_id) != str(config.get('ADMIN_ID')):
             return
         
         verif = state.verification_state
@@ -556,7 +571,7 @@ Commandes:
     
     @client.on(events.NewMessage(pattern='/clearverif'))
     async def cmd_clearverif(event):
-        if event.sender_id != config.get('ADMIN_ID'):
+        if str(event.sender_id) != str(config.get('ADMIN_ID')):
             return
         old = state.verification_state['predicted_number']
         state.verification_state = {
@@ -568,7 +583,7 @@ Commandes:
     
     @client.on(events.NewMessage(pattern=r'^/pausecycle'))
     async def cmd_pausecycle(event):
-        if event.sender_id != config.get('ADMIN_ID'):
+        if str(event.sender_id) != str(config.get('ADMIN_ID')):
             return
         
         parts = event.message.text.split()
@@ -597,7 +612,7 @@ Modifier: /pausecycle 3,5,4""")
     
     @client.on(events.NewMessage(pattern='/bilan'))
     async def cmd_bilan(event):
-        if event.sender_id != config.get('ADMIN_ID'):
+        if str(event.sender_id) != str(config.get('ADMIN_ID')):
             return
         
         if state.total_predictions == 0:

@@ -42,12 +42,13 @@ async def start_user_bot():
         
         # Setup handlers avec les IDs de canaux
         from config import (SOURCE_CHANNEL_ID, SOURCE_CHANNEL_2_ID,
-                          PREDICTION_CHANNEL_ID, SUIT_MAPPING, SUIT_DISPLAY)
+                          PREDICTION_CHANNEL_ID, SUIT_MAPPING, SUIT_DISPLAY, ADMIN_ID)
         
         config = {
             'PREDICTION_CHANNEL_ID': PREDICTION_CHANNEL_ID,
             'SUIT_MAPPING': SUIT_MAPPING,
-            'SUIT_DISPLAY': SUIT_DISPLAY
+            'SUIT_DISPLAY': SUIT_DISPLAY,
+            'ADMIN_ID': ADMIN_ID
         }
         
         source_ids = {
