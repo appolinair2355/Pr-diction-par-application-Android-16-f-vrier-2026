@@ -7,7 +7,7 @@ A Telegram bot and web application for Baccarat predictions. The app monitors Te
 - **Language**: Python 3.11
 - **Web Framework**: aiohttp (async web server)
 - **Templating**: Jinja2
-- **Database**: SQLite (stored in `data/baccarat.db`)
+- **Database**: PostgreSQL (External Render DB)
 - **Telegram**: Telethon library for bot functionality
 
 ## Key Files
@@ -15,7 +15,7 @@ A Telegram bot and web application for Baccarat predictions. The app monitors Te
 - `config.py` - Configuration (Telegram API credentials, channel IDs, admin settings)
 - `web_server.py` - aiohttp web routes (auth, admin, predictions API)
 - `bot_logic.py` - Telegram bot prediction logic
-- `database.py` - SQLite database management (users, sessions, predictions)
+- `database.py` - PostgreSQL database management (users, sessions, predictions)
 - `auth.py` - User authentication (register, login, sessions)
 - `templates/` - Jinja2 HTML templates
 - `static/` - CSS and JS assets
@@ -32,8 +32,8 @@ A Telegram bot and web application for Baccarat predictions. The app monitors Te
 - `TELEGRAM_SESSION_ADMIN` - Admin bot session string (optional)
 
 ## Recent Changes
-- 2026-02-17: Imported from GitHub, configured for Replit environment
-  - Changed default port to 5000
-  - Added missing templates (expired.html, admin_login.html)
-  - Added `events` import to web_server.py
-  - Added cache-control middleware for proper browser caching
+- 2026-02-18: Migrated to PostgreSQL and updated prediction cycle
+  - Database changed from SQLite to PostgreSQL (external host)
+  - Prediction cycle updated: 4 predictions followed by a 3-minute pause
+  - UI updated to show "X/4" for remaining predictions and real-time countdown for pause
+  - Added `telegram_id` and `plain_password` fields to user records
