@@ -40,15 +40,18 @@ function changeLang(lang) {
     }
     
     localStorage.setItem('preferred_lang', lang);
+    
+    // Forcer la mise à jour des prédictions pour appliquer la langue immédiatement
+    fetchData();
 }
 
 function getSuitDisplay(suit) {
     const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr;
     const displays = {
-        '♠': t.suit_spade || '♠️ Pique',
-        '♥': t.suit_heart || '❤️ Cœur',
-        '♦': t.suit_diamond || '♦️ Carreau',
-        '♣': t.suit_club || '♣️ Trèfle'
+        '♠': `♠️ ${t.suit_spade || 'Pique'}`,
+        '♥': `❤️ ${t.suit_heart || 'Cœur'}`,
+        '♦': `♦️ ${t.suit_diamond || 'Carreau'}`,
+        '♣': `♣️ ${t.suit_club || 'Trèfle'}`
     };
     return displays[suit] || suit;
 }
@@ -59,10 +62,46 @@ function getSuitClass(suit) {
 
 function renderHistory(predictions) {
     const grid = document.getElementById('historyGrid');
-    grid.innerHTML = '<p style="grid-column: 1/span 4; text-align: center; opacity: 0.5;">Historique désactivé</p>';
+    if (!grid) return;
+    
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr;
+
+    if (!predictions || predictions.length === 0) {
+        grid.innerHTML = `<p style="grid-column: 1/span 5; text-align: center; opacity: 0.5;">${t.no_history || 'Aucun historique'}</p>`;
+        return;
+    }
+
+    // On prend les 10 dernières prédictions résolues (pas en attente)
+    const history = predictions.filter(p => p.status !== '⏳').slice(-10).reverse();
+    
+    let html = `
+        <div class="history-header">${t.game_no || 'JEU #'}</div>
+        <div class="history-header">${t.type || 'TYPE'}</div>
+        <div class="history-header">${t.result || 'RÉSULTAT'}</div>
+        <div class="history-header">${t.status || 'STATUT'}</div>
+        <div class="history-header">${t.date || 'DATE'}</div>
+    `;
+
+    history.forEach(p => {
+        const date = new Date(p.timestamp);
+        const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+        
+        html += `
+            <div class="history-cell">#${p.game_number}</div>
+            <div class="history-cell">${p.suit}</div>
+            <div class="history-cell">-</div>
+            <div class="history-cell"><span class="status-badge">${p.status}</span></div>
+            <div class="history-cell" style="font-size: 0.8em;">${dateStr}<br>${timeStr}</div>
+        `;
+    });
+
+    grid.innerHTML = html;
 }
 
 function updateActivePrediction(predictions) {
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr;
+    
     // Trouver la prédiction en attente (statut ⏳)
     const active = predictions.find(p => p.status === '⏳');
     
@@ -71,6 +110,11 @@ function updateActivePrediction(predictions) {
     const largePredNumber = document.getElementById('largePredNumber');
     const largePredSuit = document.getElementById('largePredSuit');
     const largePredStatus = document.getElementById('largePredStatus');
+    
+    const numberEl = document.getElementById('predNumber');
+    const suitEl = document.getElementById('predSuit');
+    const statusEl = document.getElementById('predStatus');
+    const timeEl = document.getElementById('predTime');
     
     if (!active) {
         if (activePredictionDiv) activePredictionDiv.style.display = 'none';
@@ -81,25 +125,12 @@ function updateActivePrediction(predictions) {
     // Bloc standard (caché comme demandé pour ne voir que le live large)
     if (activePredictionDiv) activePredictionDiv.style.display = 'none';
     
-    // Nouveau Bloc Large - Affichage en temps réel avec traduction
+    // Nouveau Bloc Large - Affichage en temps réel
     if (largePredictionBox) {
         largePredictionBox.style.display = 'block';
-        
-        // Traduire la couleur
-        let suitKey = '';
-        switch(active.suit) {
-            case '♠': suitKey = 'suit_spade'; break;
-            case '♥': suitKey = 'suit_heart'; break;
-            case '♦': suitKey = 'suit_diamond'; break;
-            case '♣': suitKey = 'suit_club'; break;
-            default: suitKey = 'suit_spade';
-        }
-        
-        const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr;
-        
-        largePredNumber.textContent = t.prediction_title.replace('{number}', active.game_number);
-        largePredSuit.textContent = t.prediction_color.replace('{suit}', t[suitKey]);
-        largePredStatus.textContent = t.prediction_status;
+        largePredNumber.textContent = `🎰 ${t.prediction || 'PRÉDICTION'} #${active.game_number}`;
+        largePredSuit.textContent = `🎯 ${t.suit_label || 'Couleur'}: ${getSuitDisplay(active.suit)}`;
+        largePredStatus.textContent = `📊 ${t.status_label || 'Statut'}: ${t.waiting_result || 'EN ATTENTE DU RÉSULTAT...'}`;
     }
 }
 
