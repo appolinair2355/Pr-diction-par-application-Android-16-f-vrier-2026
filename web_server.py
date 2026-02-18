@@ -164,7 +164,12 @@ async def api_predictions(request):
     # Pause info
     pause_info = None
     if bot_state.pause_config:
-        remaining_before_pause = 4 - bot_state.pause_config['predictions_count']
+        # Préd. restantes: On veut afficher X/4
+        # Si predictions_count est 0 juste après une pause, on affiche 4/4
+        # Si on a fait 1 pred, on affiche 3/4, etc.
+        rem_count = 4 - bot_state.pause_config['predictions_count']
+        remaining_before_pause = f"{rem_count}/4"
+        
         is_paused = bot_state.pause_config['is_paused']
         remaining_pause_time = "0"
         
@@ -173,7 +178,6 @@ async def api_predictions(request):
                 end_time = datetime.fromisoformat(bot_state.pause_config['pause_end_time'])
                 diff = end_time - datetime.now()
                 if diff.total_seconds() > 0:
-                    # On affiche le décompte en secondes entières (ou minutes si vous préférez, mais l'utilisateur veut voir le décompte)
                     remaining_pause_time = str(int(diff.total_seconds()))
                 else:
                     is_paused = False
@@ -181,7 +185,7 @@ async def api_predictions(request):
                 pass
         
         pause_info = {
-            'remaining_before_pause': f"{remaining_before_pause}/4",
+            'remaining_before_pause': remaining_before_pause,
             'is_paused': is_paused,
             'remaining_pause_time': remaining_pause_time
         }

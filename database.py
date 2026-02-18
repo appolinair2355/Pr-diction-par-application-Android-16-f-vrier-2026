@@ -32,7 +32,8 @@ def init_db():
             is_active BOOLEAN DEFAULT TRUE,
             last_login TIMESTAMP,
             is_admin BOOLEAN DEFAULT FALSE,
-            telegram_id BIGINT
+            telegram_id BIGINT,
+            remaining_time_seconds INTEGER DEFAULT 0
         )
     ''')
     
