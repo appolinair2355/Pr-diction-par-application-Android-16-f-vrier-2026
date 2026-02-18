@@ -565,7 +565,7 @@ Commandes:
 🟢 Prédictions: {'ON' if state.predictions_enabled else 'OFF'}
 
 ⏸️ Pause: {pause_status}
-• Compteur: {state.pause_config['predictions_count']}/5
+• Compteur: {state.pause_config['predictions_count']}/4
 • Cycle: {cycle_mins} min
 • Position: {idx+1}/{len(cycle_mins)}""")
     
@@ -595,7 +595,7 @@ Commandes:
 
 Cycle: {cycle_mins} min
 Position: {idx+1}/{len(cycle_mins)}
-Compteur: {state.pause_config['predictions_count']}/5
+Compteur: {state.pause_config['predictions_count']}/4
 
 Modifier: /pausecycle 3,5,4""")
         else:
