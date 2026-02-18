@@ -14,9 +14,6 @@ const TRANSLATIONS = {
         predict: 'Prédire',
         clear: 'Effacer',
         current_pred: 'PRÉDICTION EN COURS',
-        color: 'Couleur',
-        status: 'Statut',
-        waiting_result: 'EN ATTENTE DU RÉSULTAT...',
         history: 'Historique',
         export: 'Exporter Historique',
         import: 'Importer Historique',
@@ -47,11 +44,14 @@ const TRANSLATIONS = {
         block: 'Bloquer',
         time_added: 'Temps ajouté',
         subscription_active: 'Abonnement actif',
-        // Noms des couleurs
-        spade: 'Pique',
-        heart: 'Cœur',
-        diamond: 'Carreau',
-        club: 'Trèfle'
+        // Nouvelles traductions pour la prédiction
+        prediction_title: '🎰 PRÉDICTION #{number}',
+        prediction_color: '🎯 Couleur: {suit}',
+        prediction_status: '📊 Statut: EN ATTENTE DU RÉSULTAT...',
+        suit_spade: '♠️ Pique',
+        suit_heart: '❤️ Cœur',
+        suit_diamond: '♦️ Carreau',
+        suit_club: '♣️ Trèfle'
     },
     
     en: {
@@ -64,9 +64,6 @@ const TRANSLATIONS = {
         predict: 'Predict',
         clear: 'Clear',
         current_pred: 'CURRENT PREDICTION',
-        color: 'Color',
-        status: 'Status',
-        waiting_result: 'WAITING FOR RESULT...',
         history: 'History',
         export: 'Export History',
         import: 'Import History',
@@ -97,11 +94,14 @@ const TRANSLATIONS = {
         block: 'Block',
         time_added: 'Time added',
         subscription_active: 'Subscription active',
-        // Noms des couleurs
-        spade: 'Spade',
-        heart: 'Heart',
-        diamond: 'Diamond',
-        club: 'Club'
+        // Nouvelles traductions pour la prédiction
+        prediction_title: '🎰 PREDICTION #{number}',
+        prediction_color: '🎯 Color: {suit}',
+        prediction_status: '📊 Status: WAITING FOR RESULT...',
+        suit_spade: '♠️ Spade',
+        suit_heart: '❤️ Heart',
+        suit_diamond: '♦️ Diamond',
+        suit_club: '♣️ Club'
     },
     
     es: {
@@ -114,9 +114,6 @@ const TRANSLATIONS = {
         predict: 'Predecir',
         clear: 'Borrar',
         current_pred: 'PREDICCIÓN ACTUAL',
-        color: 'Color',
-        status: 'Estado',
-        waiting_result: 'ESPERANDO RESULTADO...',
         history: 'Historial',
         export: 'Exportar Historial',
         import: 'Importar Historial',
@@ -147,11 +144,14 @@ const TRANSLATIONS = {
         block: 'Bloquear',
         time_added: 'Tiempo añadido',
         subscription_active: 'Suscripción activa',
-        // Noms des couleurs
-        spade: 'Pica',
-        heart: 'Corazón',
-        diamond: 'Diamante',
-        club: 'Trébol'
+        // Nouvelles traductions pour la prédiction
+        prediction_title: '🎰 PREDICCIÓN #{number}',
+        prediction_color: '🎯 Color: {suit}',
+        prediction_status: '📊 Estado: ESPERANDO RESULTADO...',
+        suit_spade: '♠️ Espada',
+        suit_heart: '❤️ Corazón',
+        suit_diamond: '♦️ Diamante',
+        suit_club: '♣️ Trébol'
     },
     
     ru: {
@@ -164,9 +164,6 @@ const TRANSLATIONS = {
         predict: 'Предсказать',
         clear: 'Очистить',
         current_pred: 'ТЕКУЩЕЕ ПРЕДСКАЗАНИЕ',
-        color: 'Цвет',
-        status: 'Статус',
-        waiting_result: 'ОЖИДАНИЕ РЕЗУЛЬТАТА...',
         history: 'История',
         export: 'Экспорт истории',
         import: 'Импорт истории',
@@ -197,11 +194,14 @@ const TRANSLATIONS = {
         block: 'Заблокировать',
         time_added: 'Время добавлено',
         subscription_active: 'Подписка активна',
-        // Noms des couleurs
-        spade: 'Пика',
-        heart: 'Черва',
-        diamond: 'Бубна',
-        club: 'Трефа'
+        // Nouvelles traductions pour la prédiction
+        prediction_title: '🎰 ПРЕДСКАЗАНИЕ #{number}',
+        prediction_color: '🎯 Масть: {suit}',
+        prediction_status: '📊 Статус: ОЖИДАНИЕ РЕЗУЛЬТАТА...',
+        suit_spade: '♠️ Пика',
+        suit_heart: '❤️ Черви',
+        suit_diamond: '♦️ Бубны',
+        suit_club: '♣️ Трефы'
     },
     
     de: {
@@ -214,9 +214,6 @@ const TRANSLATIONS = {
         predict: 'Vorhersagen',
         clear: 'Löschen',
         current_pred: 'AKTUELLE VORHERSAGE',
-        color: 'Farbe',
-        status: 'Status',
-        waiting_result: 'WARTE AUF ERGEBNIS...',
         history: 'Verlauf',
         export: 'Verlauf exportieren',
         import: 'Verlauf importieren',
@@ -247,11 +244,14 @@ const TRANSLATIONS = {
         block: 'Sperren',
         time_added: 'Zeit hinzugefügt',
         subscription_active: 'Abonnement aktiv',
-        // Noms des couleurs
-        spade: 'Pik',
-        heart: 'Herz',
-        diamond: 'Karo',
-        club: 'Kreuz'
+        // Nouvelles traductions pour la prédiction
+        prediction_title: '🎰 VORHERSAGE #{number}',
+        prediction_color: '🎯 Farbe: {suit}',
+        prediction_status: '📊 Status: WARTE AUF ERGEBNIS...',
+        suit_spade: '♠️ Pik',
+        suit_heart: '❤️ Herz',
+        suit_diamond: '♦️ Karo',
+        suit_club: '♣️ Kreuz'
     },
     
     it: {
@@ -264,9 +264,6 @@ const TRANSLATIONS = {
         predict: 'Predici',
         clear: 'Cancella',
         current_pred: 'PREDIZIONE CORRENTE',
-        color: 'Colore',
-        status: 'Stato',
-        waiting_result: 'IN ATTESA DEL RISULTATO...',
         history: 'Cronologia',
         export: 'Esporta Cronologia',
         import: 'Importa Cronologia',
@@ -297,11 +294,14 @@ const TRANSLATIONS = {
         block: 'Blocca',
         time_added: 'Tempo aggiunto',
         subscription_active: 'Abbonamento attivo',
-        // Noms des couleurs
-        spade: 'Picche',
-        heart: 'Cuori',
-        diamond: 'Quadri',
-        club: 'Fiori'
+        // Nouvelles traductions pour la prédiction
+        prediction_title: '🎰 PREDIZIONE #{number}',
+        prediction_color: '🎯 Colore: {suit}',
+        prediction_status: '📊 Stato: IN ATTESA DEL RISULTATO...',
+        suit_spade: '♠️ Picche',
+        suit_heart: '❤️ Cuori',
+        suit_diamond: '♦️ Quadri',
+        suit_club: '♣️ Fiori'
     },
     
     pt: {
@@ -314,9 +314,6 @@ const TRANSLATIONS = {
         predict: 'Prever',
         clear: 'Limpar',
         current_pred: 'PREVISÃO ATUAL',
-        color: 'Cor',
-        status: 'Status',
-        waiting_result: 'AGUARDANDO RESULTADO...',
         history: 'Histórico',
         export: 'Exportar Histórico',
         import: 'Importar Histórico',
@@ -347,11 +344,14 @@ const TRANSLATIONS = {
         block: 'Bloquear',
         time_added: 'Tempo adicionado',
         subscription_active: 'Assinatura ativa',
-        // Noms des couleurs
-        spade: 'Espadas',
-        heart: 'Copas',
-        diamond: 'Ouros',
-        club: 'Paus'
+        // Nouvelles traductions pour la prédiction
+        prediction_title: '🎰 PREVISÃO #{number}',
+        prediction_color: '🎯 Cor: {suit}',
+        prediction_status: '📊 Status: AGUARDANDO RESULTADO...',
+        suit_spade: '♠️ Espadas',
+        suit_heart: '❤️ Copas',
+        suit_diamond: '♦️ Ouros',
+        suit_club: '♣️ Paus'
     },
     
     ar: {
@@ -364,9 +364,6 @@ const TRANSLATIONS = {
         predict: 'تنبؤ',
         clear: 'مسح',
         current_pred: 'التنبؤ الحالي',
-        color: 'اللون',
-        status: 'الحالة',
-        waiting_result: 'في انتظار النتيجة...',
         history: 'السجل',
         export: 'تصدير السجل',
         import: 'استيراد السجل',
@@ -397,11 +394,14 @@ const TRANSLATIONS = {
         block: 'حظر',
         time_added: 'تم إضافة الوقت',
         subscription_active: 'الاشتراك نشط',
-        // Noms des couleurs
-        spade: 'بيك',
-        heart: 'قلب',
-        diamond: 'ديناري',
-        club: ' Trebol'
+        // Nouvelles traductions pour la prédiction
+        prediction_title: '🎰 التنبؤ #{number}',
+        prediction_color: '🎯 اللون: {suit}',
+        prediction_status: '📊 الحالة: في انتظار النتيجة...',
+        suit_spade: '♠️ سبايد',
+        suit_heart: '❤️ هارت',
+        suit_diamond: '♦️ دايموند',
+        suit_club: '♣️ نادي'
     },
     
     zh: {
@@ -414,9 +414,6 @@ const TRANSLATIONS = {
         predict: '预测',
         clear: '清除',
         current_pred: '当前预测',
-        color: '颜色',
-        status: '状态',
-        waiting_result: '等待结果...',
         history: '历史记录',
         export: '导出历史',
         import: '导入历史',
@@ -447,11 +444,14 @@ const TRANSLATIONS = {
         block: '封锁',
         time_added: '时间已添加',
         subscription_active: '订阅有效',
-        // Noms des couleurs
-        spade: '黑桃',
-        heart: '红桃',
-        diamond: '方块',
-        club: '梅花'
+        // Nouvelles traductions pour la prédiction
+        prediction_title: '🎰 预测 #{number}',
+        prediction_color: '🎯 花色: {suit}',
+        prediction_status: '📊 状态: 等待结果...',
+        suit_spade: '♠️ 黑桃',
+        suit_heart: '❤️ 红桃',
+        suit_diamond: '♦️ 方块',
+        suit_club: '♣️ 梅花'
     }
 };
 
