@@ -303,14 +303,6 @@ def extract_suits_from_group(group_str: str) -> list:
     normalized = normalize_suits(group_str)
     return [s for s in ['♥', '♠', '♦', '♣'] if s in normalized]
 
-def is_message_finalized(text: str) -> bool:
-    """Vérifie si le message contient des résultats finaux (parenthèses avec costumes)"""
-    return bool(re.search(r"\(.*[♠♥♦♣].*\)", normalize_suits(text)))
-
-def is_message_editing(text: str) -> bool:
-    """Vérifie si le message semble être en cours d'édition (pas encore de résultat)"""
-    return not is_message_finalized(text)
-
 async def check_and_launch_prediction(game_number: int):
     """Vérifie et lance une prédiction"""
     # Bloquer si prédiction en cours
