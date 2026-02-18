@@ -62,41 +62,7 @@ function getSuitClass(suit) {
 
 function renderHistory(predictions) {
     const grid = document.getElementById('historyGrid');
-    if (!grid) return;
-    
-    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr;
-
-    if (!predictions || predictions.length === 0) {
-        grid.innerHTML = `<p style="grid-column: 1/span 5; text-align: center; opacity: 0.5;">${t.no_history || 'Aucun historique'}</p>`;
-        return;
-    }
-
-    // On prend les 10 dernières prédictions résolues (pas en attente)
-    const history = predictions.filter(p => p.status !== '⏳').slice(-10).reverse();
-    
-    let html = `
-        <div class="history-header">${t.game_no || 'JEU #'}</div>
-        <div class="history-header">${t.type || 'TYPE'}</div>
-        <div class="history-header">${t.result || 'RÉSULTAT'}</div>
-        <div class="history-header">${t.status || 'STATUT'}</div>
-        <div class="history-header">${t.date || 'DATE'}</div>
-    `;
-
-    history.forEach(p => {
-        const date = new Date(p.timestamp);
-        const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-        
-        html += `
-            <div class="history-cell">#${p.game_number}</div>
-            <div class="history-cell">${p.suit}</div>
-            <div class="history-cell">-</div>
-            <div class="history-cell"><span class="status-badge">${p.status}</span></div>
-            <div class="history-cell" style="font-size: 0.8em;">${dateStr}<br>${timeStr}</div>
-        `;
-    });
-
-    grid.innerHTML = html;
+    grid.innerHTML = '<p style="grid-column: 1/span 4; text-align: center; opacity: 0.5;">Historique désactivé</p>';
 }
 
 function updateActivePrediction(predictions) {
