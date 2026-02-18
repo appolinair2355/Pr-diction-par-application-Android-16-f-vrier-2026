@@ -99,9 +99,15 @@ async def api_login(request):
     result = await login_user(data.get('email'), data.get('password'))
     
     if result['success']:
+        # Convert user dict to JSON serializable (handle datetime)
+        user_data = result['user'].copy()
+        for key, value in user_data.items():
+            if isinstance(value, datetime):
+                user_data[key] = value.isoformat()
+                
         response = web.json_response({
             'success': True,
-            'user': result['user']
+            'user': user_data
         })
         response.set_cookie('session_id', result['session_id'],
                           max_age=7*24*3600, httponly=True)
@@ -160,23 +166,22 @@ async def api_predictions(request):
     if bot_state.pause_config:
         remaining_before_pause = 4 - bot_state.pause_config['predictions_count']
         is_paused = bot_state.pause_config['is_paused']
-        remaining_pause_time = "--:--"
+        remaining_pause_time = "0"
         
         if is_paused and bot_state.pause_config['pause_end_time']:
             try:
                 end_time = datetime.fromisoformat(bot_state.pause_config['pause_end_time'])
                 diff = end_time - datetime.now()
                 if diff.total_seconds() > 0:
-                    minutes = int(diff.total_seconds() // 60)
-                    seconds = int(diff.total_seconds() % 60)
-                    remaining_pause_time = f"{minutes:02d}:{seconds:02d}"
+                    # On affiche le décompte en secondes entières (ou minutes si vous préférez, mais l'utilisateur veut voir le décompte)
+                    remaining_pause_time = str(int(diff.total_seconds()))
                 else:
                     is_paused = False
             except:
                 pass
         
         pause_info = {
-            'remaining_before_pause': 0 if is_paused else max(0, remaining_before_pause),
+            'remaining_before_pause': f"{remaining_before_pause}/4",
             'is_paused': is_paused,
             'remaining_pause_time': remaining_pause_time
         }

@@ -26,6 +26,9 @@ ADMIN_ID = int(os.getenv('ADMIN_ID') or '1190237801')
 # Configuration serveur
 PORT = int(os.getenv('PORT') or '5000')
 
+# Base de données PostgreSQL (Render)
+DATABASE_URL = os.getenv('DATABASE_URL') or "postgresql://application_web_user:7uHA2Tt82d4FsHx3nbiQmCsbCH43Kjj1@dpg-d6aq8kf5r7bs739915hg-a.oregon-postgres.render.com/application_web"
+
 # Admin web
 ADMIN_EMAIL = 'sossoukouam@gmail.com'
 ADMIN_PASSWORD = 'arrow0291'

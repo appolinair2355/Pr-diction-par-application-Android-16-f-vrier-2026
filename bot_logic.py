@@ -331,7 +331,7 @@ async def check_and_launch_prediction(game_number: int):
     
     # Cycle de pause
     state.pause_config['predictions_count'] += 1
-    if state.pause_config['predictions_count'] >= 5:
+    if state.pause_config['predictions_count'] >= 4:
         cycle = state.pause_config['cycle']
         idx = state.pause_config['current_index'] % len(cycle)
         duration = cycle[idx]

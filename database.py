@@ -1,26 +1,27 @@
 """
 Gestion de la base de données SQLite
 """
-import sqlite3
-import json
-from datetime import datetime, timedelta
-from pathlib import Path
+import os
+import psycopg2
 import hashlib
 import secrets
+from psycopg2.extras import RealDictCursor
+from datetime import datetime, timedelta
+from config import DATABASE_URL
 
-DB_PATH = Path('data/baccarat.db')
+def get_connection():
+    """Crée une connexion à la base de données PostgreSQL"""
+    return psycopg2.connect(DATABASE_URL)
 
 def init_db():
-    """Initialise la base de données"""
-    DB_PATH.parent.mkdir(exist_ok=True)
-    
-    conn = sqlite3.connect(DB_PATH)
+    """Initialise la base de données PostgreSQL"""
+    conn = get_connection()
     c = conn.cursor()
     
     # Table utilisateurs
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             plain_password TEXT,
@@ -28,34 +29,27 @@ def init_db():
             last_name TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             subscription_end TIMESTAMP,
-            is_active BOOLEAN DEFAULT 1,
+            is_active BOOLEAN DEFAULT TRUE,
             last_login TIMESTAMP,
-            is_admin BOOLEAN DEFAULT 0
+            is_admin BOOLEAN DEFAULT FALSE,
+            telegram_id BIGINT
         )
     ''')
-
-    # Correction pour ajouter plain_password si la table existe déjà
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN plain_password TEXT")
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass # La colonne existe déjà
     
     # Table sessions
     c.execute('''
         CREATE TABLE IF NOT EXISTS sessions (
             session_id TEXT PRIMARY KEY,
-            user_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL REFERENCES users(id),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            expires_at TIMESTAMP NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
+            expires_at TIMESTAMP NOT NULL
         )
     ''')
     
-    # Table prédictions (pour historique)
+    # Table prédictions
     c.execute('''
         CREATE TABLE IF NOT EXISTS predictions_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             game_number INTEGER NOT NULL,
             suit TEXT NOT NULL,
             status TEXT NOT NULL,
@@ -66,41 +60,36 @@ def init_db():
     ''')
     
     conn.commit()
+    c.close()
     conn.close()
     
-    # 🔧 CORRECTION : Créer l'admin par défaut
     create_default_admin()
 
 def create_default_admin():
     """Crée l'administrateur par défaut si non existant"""
     from config import ADMIN_EMAIL, ADMIN_PASSWORD
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
     
-    # Vérifier si l'admin existe
-    c.execute('SELECT id FROM users WHERE email = ?', (ADMIN_EMAIL,))
+    c.execute('SELECT id FROM users WHERE email = %s', (ADMIN_EMAIL.lower(),))
     if not c.fetchone():
-        # Créer l'admin
         password_hash = hash_password(ADMIN_PASSWORD)
         c.execute('''
-            INSERT INTO users (email, password_hash, first_name, last_name, is_active, is_admin, subscription_end)
-            VALUES (?, ?, ?, ?, 1, 1, ?)
-        ''', (ADMIN_EMAIL, password_hash, 'Admin', 'System', datetime.now() + timedelta(days=3650)))
-        
+            INSERT INTO users (email, password_hash, plain_password, first_name, last_name, is_active, is_admin, subscription_end)
+            VALUES (%s, %s, %s, %s, %s, TRUE, TRUE, %s)
+        ''', (ADMIN_EMAIL.lower(), password_hash, ADMIN_PASSWORD, 'Admin', 'System', datetime.now() + timedelta(days=3650)))
         conn.commit()
-        print(f"✅ Admin créé: {ADMIN_EMAIL}")
     else:
-        # Mettre à jour le mot de passe et s'assurer que is_admin = 1
         password_hash = hash_password(ADMIN_PASSWORD)
         c.execute('''
             UPDATE users 
-            SET password_hash = ?, is_admin = 1, is_active = 1 
-            WHERE email = ?
-        ''', (password_hash, ADMIN_EMAIL))
+            SET password_hash = %s, plain_password = %s, is_admin = TRUE, is_active = TRUE 
+            WHERE email = %s
+        ''', (password_hash, ADMIN_PASSWORD, ADMIN_EMAIL.lower()))
         conn.commit()
-        print(f"✅ Admin mis à jour: {ADMIN_EMAIL}")
     
+    c.close()
     conn.close()
 
 def hash_password(password: str) -> str:
@@ -118,62 +107,46 @@ def verify_password(stored: str, provided: str) -> bool:
 
 def create_user(email: str, password: str, first_name: str, last_name: str) -> dict:
     """Crée un nouvel utilisateur"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
         password_hash = hash_password(password)
         c.execute('''
             INSERT INTO users (email, password_hash, plain_password, first_name, last_name, is_admin)
-            VALUES (?, ?, ?, ?, ?, 0)
+            VALUES (%s, %s, %s, %s, %s, FALSE)
+            RETURNING id, email, first_name, last_name, subscription_end
         ''', (email.lower(), password_hash, password, first_name, last_name))
         
-        user_id = c.lastrowid
+        user = c.fetchone()
         conn.commit()
-        
-        return {
-            'id': user_id,
-            'email': email.lower(),
-            'first_name': first_name,
-            'last_name': last_name,
-            'subscription_end': None
-        }
-    except sqlite3.IntegrityError:
+        return dict(user)
+    except Exception:
         return None
     finally:
+        c.close()
         conn.close()
 
 def get_user_by_email(email: str) -> dict:
     """Récupère un utilisateur par email"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=RealDictCursor)
     
     c.execute('''
         SELECT id, email, password_hash, first_name, last_name, 
-               subscription_end, is_active, created_at, is_admin
-        FROM users WHERE email = ?
+               subscription_end, is_active, created_at, is_admin, telegram_id
+        FROM users WHERE email = %s
     ''', (email.lower(),))
     
     row = c.fetchone()
+    c.close()
     conn.close()
     
-    if row:
-        return {
-            'id': row[0],
-            'email': row[1],
-            'password_hash': row[2],
-            'first_name': row[3],
-            'last_name': row[4],
-            'subscription_end': row[5],
-            'is_active': row[6],
-            'created_at': row[7],
-            'is_admin': row[8] if len(row) > 8 else False
-        }
-    return None
+    return dict(row) if row else None
 
 def create_session(user_id: int, days: int = 7) -> str:
     """Crée une session utilisateur"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
     
     session_id = secrets.token_urlsafe(32)
@@ -181,82 +154,71 @@ def create_session(user_id: int, days: int = 7) -> str:
     
     c.execute('''
         INSERT INTO sessions (session_id, user_id, expires_at)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
     ''', (session_id, user_id, expires_at))
     
     conn.commit()
+    c.close()
     conn.close()
     
     return session_id
 
 def get_session(session_id: str) -> dict:
     """Récupère une session valide"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=RealDictCursor)
     
     c.execute('''
         SELECT s.session_id, s.user_id, s.expires_at,
                u.email, u.first_name, u.last_name, u.subscription_end, u.is_active, u.is_admin
         FROM sessions s
         JOIN users u ON s.user_id = u.id
-        WHERE s.session_id = ? AND s.expires_at > ?
+        WHERE s.session_id = %s AND s.expires_at > %s
     ''', (session_id, datetime.now()))
     
     row = c.fetchone()
+    c.close()
     conn.close()
     
-    if row:
-        return {
-            'session_id': row[0],
-            'user_id': row[1],
-            'expires_at': row[2],
-            'email': row[3],
-            'first_name': row[4],
-            'last_name': row[5],
-            'subscription_end': row[6],
-            'is_active': row[7],
-            'is_admin': row[8] if len(row) > 8 else False
-        }
-    return None
+    return dict(row) if row else None
 
 def delete_session(session_id: str):
     """Supprime une session"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
-    c.execute('DELETE FROM sessions WHERE session_id = ?', (session_id,))
+    c.execute('DELETE FROM sessions WHERE session_id = %s', (session_id,))
     conn.commit()
+    c.close()
     conn.close()
 
 def add_subscription_time(user_id: int, days: int):
     """Ajoute du temps d'abonnement"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
     
-    c.execute('SELECT subscription_end FROM users WHERE id = ?', (user_id,))
+    c.execute('SELECT subscription_end FROM users WHERE id = %s', (user_id,))
     row = c.fetchone()
     
-    current_end = row[0] if row[0] else datetime.now()
-    if isinstance(current_end, str):
-        current_end = datetime.fromisoformat(current_end)
-    
+    current_end = row[0] if row and row[0] else datetime.now()
     if current_end < datetime.now():
         current_end = datetime.now()
     
     new_end = current_end + timedelta(days=days)
     
     c.execute('''
-        UPDATE users SET subscription_end = ? WHERE id = ?
+        UPDATE users SET subscription_end = %s WHERE id = %s
     ''', (new_end, user_id))
     
     conn.commit()
+    c.close()
     conn.close()
     
     return new_end
 
 def get_all_users() -> list:
     """Récupère tous les utilisateurs pour l'admin"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+    conn = get_connection()
+    c = conn.cursor(cursor_factory=RealDictCursor)
     
     c.execute('''
         SELECT id, email, first_name, last_name, 
@@ -264,66 +226,59 @@ def get_all_users() -> list:
         FROM users ORDER BY created_at DESC
     ''')
     
-    users = []
-    for row in c.fetchall():
-        users.append({
-            'id': row[0],
-            'email': row[1],
-            'first_name': row[2],
-            'last_name': row[3],
-            'subscription_end': row[4],
-            'is_active': row[5],
-            'created_at': row[6],
-            'is_admin': row[7],
-            'plain_password': row[8]
-        })
-    
+    users = [dict(row) for row in c.fetchall()]
+    c.close()
     conn.close()
     return users
 
 def update_last_login(user_id: int):
     """Met à jour la dernière connexion"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
-    c.execute('UPDATE users SET last_login = ? WHERE id = ?', 
+    c.execute('UPDATE users SET last_login = %s WHERE id = %s', 
               (datetime.now(), user_id))
     conn.commit()
+    c.close()
     conn.close()
 
 def log_prediction(game_number: int, suit: str, status: str):
     """Enregistre une prédiction dans la base de données"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
     c.execute('''
         INSERT INTO predictions_log (game_number, suit, status, resolved_at)
-        VALUES (?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s)
     ''', (game_number, suit, status, datetime.now()))
     conn.commit()
+    c.close()
     conn.close()
 
 def get_prediction_stats():
     """Récupère les statistiques globales des prédictions"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM predictions_log WHERE status = 'WON'")
     won = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM predictions_log WHERE status = 'LOST'")
     lost = c.fetchone()[0]
+    c.close()
     conn.close()
     return won, lost
 
 def block_user(user_id: int):
     """Bloque un utilisateur"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
-    c.execute('UPDATE users SET is_active = 0 WHERE id = ?', (user_id,))
+    c.execute('UPDATE users SET is_active = FALSE WHERE id = %s', (user_id,))
     conn.commit()
+    c.close()
     conn.close()
 
 def unblock_user(user_id: int):
     """Débloque un utilisateur"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     c = conn.cursor()
-    c.execute('UPDATE users SET is_active = 1 WHERE id = ?', (user_id,))
+    c.execute('UPDATE users SET is_active = TRUE WHERE id = %s', (user_id,))
     conn.commit()
+    c.close()
     conn.close()
