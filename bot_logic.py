@@ -317,20 +317,18 @@ async def check_and_launch_prediction(game_number: int):
             if datetime.now() < end_time:
                 return
             state.pause_config['is_paused'] = False
-            state.pause_config['predictions_count'] = 0 # S'assurer que le compteur est à 0 après la pause
             logger.info("🔄 Pause terminée")
         except:
             state.pause_config['is_paused'] = False
-            state.pause_config['predictions_count'] = 0
-
+    
     # Vérifier déclencheur
     if not is_trigger_number(game_number):
         return
-
+    
     target_num = get_trigger_target(game_number)
     if not target_num:
         return
-
+    
     # Lancer prédiction
     suit = get_suit_for_number(target_num)
     if suit:
@@ -338,22 +336,12 @@ async def check_and_launch_prediction(game_number: int):
         state.pause_config['predictions_count'] += 1
         await send_prediction_to_channel(target_num, suit, game_number)
 
-async def send_pause_message_to_channel(duration_seconds: int, end_time_iso=None):
+async def send_pause_message_to_channel(duration_seconds: int):
     """Envoie le message de pause au canal et met à jour l'état"""
-    if end_time_iso:
-        # Si une heure de fin est fournie (venant du canal), on l'utilise
-        state.pause_config['pause_end_time'] = end_time_iso
-        try:
-            end_dt = datetime.fromisoformat(end_time_iso)
-            minutes = int((end_dt - datetime.now()).total_seconds()) // 60
-        except:
-            minutes = duration_seconds // 60
-    else:
-        minutes = duration_seconds // 60
-        state.pause_config['pause_end_time'] = (datetime.now() + timedelta(seconds=duration_seconds)).isoformat()
-    
+    minutes = duration_seconds // 60
     state.pause_config['is_paused'] = True
-    state.pause_config['predictions_count'] = 0 # Reset à 0 quand la pause commence (affichera 4/4)
+    state.pause_config['pause_end_time'] = (datetime.now() + timedelta(seconds=duration_seconds)).isoformat()
+    state.pause_config['predictions_count'] = 0 # Reset à 0 quand la pause commence (donc affichera 4/4 car 4-0=4)
     
     try:
         await state.client.send_message(
@@ -374,9 +362,6 @@ async def process_source_message(message_text: str, chat_id: int, source_ids: di
             duration = 180 # par défaut 3 min
             if match:
                 duration = int(match.group(1)) * 60
-            
-            # Essayer de détecter si le canal source donne une heure de fin précise
-            # Format possible: "Pause jusqu'à 14:30" ou similaire (non implémenté ici car dépend du format exact)
             
             await send_pause_message_to_channel(duration)
             return
