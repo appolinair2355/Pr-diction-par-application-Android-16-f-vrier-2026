@@ -42,14 +42,27 @@ function changeLang(lang) {
     localStorage.setItem('preferred_lang', lang);
 }
 
+// Fonction pour obtenir le nom traduit de la couleur
 function getSuitDisplay(suit) {
-    const displays = {
-        '♠': '♠️ Pique',
-        '♥': '❤️ Cœur',
-        '♦': '♦️ Carreau',
-        '♣': '♣️ Trèfle'
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr;
+    
+    // Mapping des symboles vers les clés de traduction
+    const suitMap = {
+        '♠': t.spade || 'Pique',
+        '♥': t.heart || 'Cœur',
+        '♦': t.diamond || 'Carreau',
+        '♣': t.club || 'Trèfle'
     };
-    return displays[suit] || suit;
+    
+    // Retourner le symbole + nom traduit
+    const suitSymbols = {
+        '♠': '♠️',
+        '♥': '❤️',
+        '♦': '♦️',
+        '♣': '♣️'
+    };
+    
+    return `${suitSymbols[suit] || suit} ${suitMap[suit] || suit}`;
 }
 
 function getSuitClass(suit) {
@@ -82,15 +95,18 @@ function updateActivePrediction(predictions) {
         return;
     }
     
+    // Récupérer les traductions
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.fr;
+    
     // Bloc standard (caché comme demandé pour ne voir que le live large)
     if (activePredictionDiv) activePredictionDiv.style.display = 'none';
     
-    // Nouveau Bloc Large - Affichage en temps réel
+    // Nouveau Bloc Large - Affichage en temps réel avec traductions
     if (largePredictionBox) {
         largePredictionBox.style.display = 'block';
-        largePredNumber.textContent = `🎰 PRÉDICTION #${active.game_number}`;
-        largePredSuit.textContent = `🎯 Couleur: ${getSuitDisplay(active.suit)}`;
-        largePredStatus.textContent = `📊 Statut: EN ATTENTE DU RÉSULTAT...`;
+        largePredNumber.textContent = `🎰 ${t.prediction || 'PRÉDICTION'} #${active.game_number}`;
+        largePredSuit.textContent = `🎯 ${t.color || 'Couleur'}: ${getSuitDisplay(active.suit)}`;
+        largePredStatus.textContent = `📊 ${t.status || 'Statut'}: ${t.waiting_result || 'EN ATTENTE DU RÉSULTAT...'}`;
     }
 }
 
@@ -159,52 +175,13 @@ async function fetchData() {
         document.getElementById('winRateValue').textContent = data.win_rate + '%';
         document.getElementById('wonValue').textContent = data.won_predictions;
         document.getElementById('lostValue').textContent = data.lost_predictions;
-        
-        // Mise à jour des nouveaux compteurs (Préd. restantes et Pause)
-        if (data.pause_info) {
-            const predRemEl = document.getElementById('topWonCount');
-            const pauseValEl = document.getElementById('topLostCount');
-            
-            if (predRemEl) predRemEl.textContent = data.pause_info.remaining_before_pause;
-            
-            if (data.pause_info.is_paused) {
-                if (pauseValEl) {
-                    pauseValEl.textContent = data.pause_info.remaining_pause_time;
-                    pauseValEl.style.color = '#ff4b2b';
-                }
-            } else {
-                if (pauseValEl) {
-                    pauseValEl.textContent = "0";
-                    pauseValEl.style.color = '';
-                }
-            }
-        }
-        
+        document.getElementById('topWonCount').textContent = data.won_predictions;
+        document.getElementById('topLostCount').textContent = data.lost_predictions;
         document.getElementById('progressHeader').textContent = 
             `${data.won_predictions + data.lost_predictions} / ${data.total_predictions}`;
         
         if (data.last_source_game) {
             document.getElementById('sourceGameNumber').textContent = '#' + data.last_source_game;
-        }
-
-        // Update Pause Info
-        const pauseInfoBar = document.getElementById('pauseInfoBar');
-        if (pauseInfoBar) {
-            if (data.pause_info) {
-                pauseInfoBar.style.display = 'flex';
-                document.getElementById('predRemaining').textContent = data.pause_info.remaining_before_pause;
-                const pauseTimerBox = document.getElementById('pauseTimerBox');
-                const pauseTimerValue = document.getElementById('pauseTimerValue');
-                
-                if (data.pause_info.is_paused) {
-                    pauseTimerBox.style.display = 'block';
-                    pauseTimerValue.textContent = data.pause_info.remaining_pause_time;
-                } else {
-                    pauseTimerBox.style.display = 'none';
-                }
-            } else {
-                pauseInfoBar.style.display = 'none';
-            }
         }
         
         // Mettre à jour la prédiction active
@@ -226,4 +203,6 @@ async function logout() {
 // Gestionnaire de sélection de langue
 document.getElementById('langSelect')?.addEventListener('change', (e) => {
     changeLang(e.target.value);
+    // Rafraîchir immédiatement l'affichage de la prédiction avec la nouvelle langue
+    fetchData();
 });
