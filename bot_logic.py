@@ -303,6 +303,14 @@ def extract_suits_from_group(group_str: str) -> list:
     normalized = normalize_suits(group_str)
     return [s for s in ['♥', '♠', '♦', '♣'] if s in normalized]
 
+def is_message_finalized(text: str) -> bool:
+    """Vérifie si le message contient des résultats finaux (parenthèses avec costumes)"""
+    return bool(re.search(r"\(.*[♠♥♦♣].*\)", normalize_suits(text)))
+
+def is_message_editing(text: str) -> bool:
+    """Vérifie si le message semble être en cours d'édition (pas encore de résultat)"""
+    return not is_message_finalized(text)
+
 async def check_and_launch_prediction(game_number: int):
     """Vérifie et lance une prédiction"""
     # Bloquer si prédiction en cours
@@ -317,61 +325,70 @@ async def check_and_launch_prediction(game_number: int):
             if datetime.now() < end_time:
                 return
             state.pause_config['is_paused'] = False
+            state.pause_config['predictions_count'] = 0 # S'assurer que le compteur est à 0 après la pause
             logger.info("🔄 Pause terminée")
         except:
             state.pause_config['is_paused'] = False
-    
+            state.pause_config['predictions_count'] = 0
+
     # Vérifier déclencheur
     if not is_trigger_number(game_number):
         return
-    
+
     target_num = get_trigger_target(game_number)
     if not target_num:
         return
-    
-    # Cycle de pause
-    state.pause_config['predictions_count'] += 1
-    if state.pause_config['predictions_count'] >= 4:
-        cycle = state.pause_config['cycle']
-        idx = state.pause_config['current_index'] % len(cycle)
-        duration = cycle[idx]
-        
-        state.pause_config['is_paused'] = True
-        state.pause_config['pause_end_time'] = (datetime.now() + timedelta(seconds=duration)).isoformat()
-        state.pause_config['current_index'] += 1
-        state.pause_config['predictions_count'] = 0
-        
-        minutes = duration // 60
-        logger.info(f"⏸️ PAUSE: {minutes}min")
-        
-        try:
-            await state.client.send_message(
-                PREDICTION_CHANNEL_ID,
-                f"⏸️ **PAUSE**\n⏱️ {minutes} minutes..."
-            )
-        except Exception as e:
-            logger.error(f"Erreur message pause: {e}")
-        
-        return
-    
+
     # Lancer prédiction
     suit = get_suit_for_number(target_num)
     if suit:
+        # Incrémenter le compteur seulement ici, lors d'un vrai lancement
+        state.pause_config['predictions_count'] += 1
         await send_prediction_to_channel(target_num, suit, game_number)
 
-# ============================================================
-# TRAITEMENT MESSAGES SOURCE (MODIFIÉ)
-# ============================================================
-
-def is_message_finalized(message: str) -> bool:
-    return '✅' in message or '🔰' in message or '▶️' in message or 'FIN' in message.upper()
-
-def is_message_editing(message: str) -> bool:
-    return message.strip().startswith('⏰')
+async def send_pause_message_to_channel(duration_seconds: int, end_time_iso=None):
+    """Envoie le message de pause au canal et met à jour l'état"""
+    if end_time_iso:
+        # Si une heure de fin est fournie (venant du canal), on l'utilise
+        state.pause_config['pause_end_time'] = end_time_iso
+        try:
+            end_dt = datetime.fromisoformat(end_time_iso)
+            minutes = int((end_dt - datetime.now()).total_seconds()) // 60
+        except:
+            minutes = duration_seconds // 60
+    else:
+        minutes = duration_seconds // 60
+        state.pause_config['pause_end_time'] = (datetime.now() + timedelta(seconds=duration_seconds)).isoformat()
+    
+    state.pause_config['is_paused'] = True
+    state.pause_config['predictions_count'] = 0 # Reset à 0 quand la pause commence (affichera 4/4)
+    
+    try:
+        await state.client.send_message(
+            PREDICTION_CHANNEL_ID,
+            f"⏸️ **PAUSE**\n⏱️ {minutes} minutes..."
+        )
+        logger.info(f"⏸️ PAUSE lancée: {minutes}min")
+    except Exception as e:
+        logger.error(f"Erreur message pause: {e}")
 
 async def process_source_message(message_text: str, chat_id: int, source_ids: dict, is_finalized=False, config=None):
     """Traite les messages du canal source avec prédiction automatique"""
     try:
+        # Détection de la pause dans le canal source (si le canal envoie "PAUSE")
+        if "PAUSE" in message_text.upper():
+            # Extraire la durée si présente (ex: "Pause 3 minutes")
+            match = re.search(r"(\d+)\s*MIN", message_text.upper())
+            duration = 180 # par défaut 3 min
+            if match:
+                duration = int(match.group(1)) * 60
+            
+            # Essayer de détecter si le canal source donne une heure de fin précise
+            # Format possible: "Pause jusqu'à 14:30" ou similaire (non implémenté ici car dépend du format exact)
+            
+            await send_pause_message_to_channel(duration)
+            return
+
         # Log pour debug
         logger.info(f"Traitement message source: chat_id={chat_id}, attendu={source_ids.get('SOURCE_CHANNEL_ID')}")
         
