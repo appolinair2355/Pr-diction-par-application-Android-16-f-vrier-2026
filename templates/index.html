@@ -9,6 +9,9 @@
 <body>
     <!-- Timer abonnement -->
     <div class="timer-display" id="timerDisplay">
+        <div style="font-weight: bold; font-size: 1.2em; margin-bottom: 5px;">
+            {{ user.first_name }} {{ user.last_name }}
+        </div>
         <div class="timer-label" data-translate="time_remaining">Temps restant</div>
         <div class="timer-value" id="timerValue">--:--:--</div>
     </div>
@@ -21,7 +24,10 @@
         
         <!-- Titre -->
         <div class="main-title">
-            <div class="icon">🎰</div>
+            <div class="icon" style="background: none; border: none;">
+                <img src="/static/logo.png?v={{ range(1, 100000) | random }}" alt="Logo" id="siteLogo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <span style="display: none;">🎰</span>
+            </div>
             <h1 data-translate="title">Prédicteur Baccara</h1>
         </div>
         
@@ -40,14 +46,20 @@
             </select>
         </div>
         
-        <!-- Info bar -->
         <div class="info-bar">
+            {% if user.is_admin or user.email == 'sossoukouam@gmail.com' %}
+            <a href="/admin" class="info-box role" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer; text-decoration: none; display: flex !important; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="label" style="color: white !important;">ADMIN</div>
+                <div class="value" style="font-size: 1.2em; color: white !important;">PANEL 🔧</div>
+            </a>
+            {% else %}
             <div class="info-box role">
-                <div class="label">Gagnants</div>
-                <div class="value" id="topWonCount">0</div>
+                <div class="label">Préd. restantes</div>
+                <div class="value" id="topWonCount">4</div>
             </div>
+            {% endif %}
             <div class="info-box role">
-                <div class="label">Perdus</div>
+                <div class="label">Pause</div>
                 <div class="value" id="topLostCount">0</div>
             </div>
             <div class="info-box win-rate">
@@ -67,15 +79,11 @@
         </div>
         
         <!-- Bloc PRÉDICTION Large -->
-        <div class="prediction-box" id="predictionBox" style="display: none;">
+        <div class="prediction-box" id="largePredictionBox" style="display: none;">
             <h3 id="largePredNumber">🎰 PRÉDICTION #---</h3>
             <p id="largePredSuit">🎯 Couleur: ---</p>
+            <p id="largePredStatus">📊 Statut: EN ATTENTE DU RÉSULTAT...</p>
         </div>
-        
-        <!-- Déconnexion -->
-        <button class="btn btn-disconnect" onclick="logout()" data-translate="disconnect">
-            🔒 Déconnexion
-        </button>
         
         <!-- Stats -->
         <div class="stats-row">
@@ -89,56 +97,25 @@
             </div>
         </div>
 
-        <!-- Bloc PRÉDICTION Large -->
-        <div class="prediction-box" id="largePredictionBox" style="display: none;">
-            <h3 id="largePredNumber">🎰 PRÉDICTION #---</h3>
-            <p id="largePredSuit">🎯 Couleur: ---</p>
-            <p id="largePredStatus">📊 Statut: EN ATTENTE DU RÉSULTAT...</p>
-        </div>
-        
-        <!-- Prédiction Active (dernière envoyée) -->
-        <div class="active-prediction" id="activePrediction" style="display: none;">
-            <div class="pred-title" data-translate="prediction">PRÉDICTION</div>
-            <div id="predictionContent" style="text-align: left; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-top: 10px; font-family: monospace; line-height: 1.5;">
-                🎰 PRÉDICTION <span id="predNumber">#---</span><br>
-                🎯 Couleur: <span id="predSuit">---</span><br>
-                ⏳ Statut: <span id="predStatus">EN ATTENTE DU RÉSULTAT...</span>
+        <div class="info-bar" id="pauseInfoBar" style="display: none; margin-top: 10px;">
+            <div class="info-box role" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="label">Préd. Restantes</div>
+                <div class="value" id="predRemaining">0</div>
             </div>
-            <div class="pred-rattrapage" id="predRattrapage" style="display: none;"></div>
-            <div class="pred-time" id="predTime" style="margin-top: 10px; font-size: 0.8em; opacity: 0.6;">--:--:--</div>
-        </div>
-        
-        <!-- Historique -->
-        <div class="history-section">
-            <div class="history-title" data-translate="history">Historique</div>
-            <div class="history-grid" id="historyGrid">
-                <!-- Rempli par JS -->
+            <div class="info-box win-rate" id="pauseTimerBox" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);">
+                <div class="label">Pause</div>
+                <div class="value" id="pauseTimerValue">--:--</div>
             </div>
         </div>
-        
-        <!-- Export/Import -->
-        <div class="export-import">
-            <button class="btn-export" data-translate="export">
-                💾 Exporter
-            </button>
-            <button class="btn-import" data-translate="import">
-                📁 Importer
-            </button>
-        </div>
-        
-        <!-- Social -->
-        <div class="social-links">
-            <button class="btn-social btn-telegram" data-translate="telegram">
-                ✈️ Telegram
-            </button>
-            <button class="btn-social btn-whatsapp" data-translate="whatsapp">
-                📱 WhatsApp
-            </button>
-        </div>
+
+        <!-- Déconnexion -->
+        <button class="btn btn-disconnect" onclick="logout()" data-translate="disconnect">
+            🔒 Déconnexion
+        </button>
         
         <!-- Footer -->
         <div class="footer">
-            © 2025 <span data-translate="footer">Prédicteur Baccara</span>
+            développé par Sossou Kouamé
         </div>
     </div>
 
