@@ -37,9 +37,6 @@ async def login_user(email: str, password: str):
     if not user['is_active']:
         return {'success': False, 'error': 'account_blocked'}
     
-    # Forcer admin pour l'email principal
-    is_admin_user = user.get('is_admin', False) or user['email'] == ADMIN_EMAIL
-    
     # Met à jour dernière connexion
     update_last_login(user['id'])
     
@@ -55,7 +52,7 @@ async def login_user(email: str, password: str):
             'first_name': user['first_name'],
             'last_name': user['last_name'],
             'subscription_end': user['subscription_end'],
-            'is_admin': is_admin_user
+            'is_admin': user.get('is_admin', False)
         }
     }
 

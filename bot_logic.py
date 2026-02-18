@@ -331,7 +331,7 @@ async def check_and_launch_prediction(game_number: int):
     
     # Cycle de pause
     state.pause_config['predictions_count'] += 1
-    if state.pause_config['predictions_count'] >= 4:
+    if state.pause_config['predictions_count'] >= 5:
         cycle = state.pause_config['cycle']
         idx = state.pause_config['current_index'] % len(cycle)
         duration = cycle[idx]
@@ -565,7 +565,7 @@ Commandes:
 🟢 Prédictions: {'ON' if state.predictions_enabled else 'OFF'}
 
 ⏸️ Pause: {pause_status}
-• Compteur: {state.pause_config['predictions_count']}/4
+• Compteur: {state.pause_config['predictions_count']}/5
 • Cycle: {cycle_mins} min
 • Position: {idx+1}/{len(cycle_mins)}""")
     
@@ -595,7 +595,7 @@ Commandes:
 
 Cycle: {cycle_mins} min
 Position: {idx+1}/{len(cycle_mins)}
-Compteur: {state.pause_config['predictions_count']}/4
+Compteur: {state.pause_config['predictions_count']}/5
 
 Modifier: /pausecycle 3,5,4""")
         else:
