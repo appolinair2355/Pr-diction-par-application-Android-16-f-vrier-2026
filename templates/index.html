@@ -5,6 +5,181 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prédicteur Baccarat</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* ============================================================
+           STYLES POUR L'HISTORIQUE (Style Admin)
+           ============================================================ */
+        .prediction-history {
+            margin-top: 30px;
+            background: #1a1a2e;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid #0f3460;
+            margin-bottom: 20px;
+        }
+
+        .prediction-history h3 {
+            color: white;
+            margin: 0;
+            padding: 15px 20px;
+            background: #16213e;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .prediction-history h3::before {
+            content: "📜";
+        }
+
+        /* Table style admin */
+        .admin-style-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+
+        .admin-style-table thead {
+            background: #0f3460;
+        }
+
+        .admin-style-table th {
+            padding: 12px 15px;
+            text-align: left;
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        .admin-style-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #0f3460;
+            color: white;
+        }
+
+        .admin-style-table tbody tr:hover {
+            background: #16213e;
+        }
+
+        .admin-style-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Style pour les statuts comme admin ✅0, ✅1, etc. */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .status-won {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-lost {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-pending {
+            background: #ffc107;
+            color: #000;
+        }
+
+        /* Costume symbols */
+        .suit-symbol {
+            font-size: 1.2em;
+        }
+
+        .suit-hearts { color: #ff4757; }
+        .suit-diamonds { color: #ff4757; }
+        .suit-clubs { color: #ffffff; }
+        .suit-spades { color: #ffffff; }
+
+        /* Game number */
+        .game-number {
+            font-weight: bold;
+            color: #e94560;
+        }
+
+        /* Date format */
+        .date-cell {
+            font-size: 0.85em;
+            color: #aaa;
+            line-height: 1.4;
+        }
+
+        /* Bouton retour/rafraîchir */
+        .history-footer {
+            padding: 15px;
+            background: #16213e;
+            text-align: center;
+            border-top: 1px solid #0f3460;
+        }
+
+        .btn-refresh {
+            background: #0f3460;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-refresh:hover {
+            background: #e94560;
+            transform: translateY(-2px);
+        }
+
+        /* Scrollbar styling */
+        .history-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .history-scroll::-webkit-scrollbar-track {
+            background: #16213e;
+        }
+
+        .history-scroll::-webkit-scrollbar-thumb {
+            background: #0f3460;
+            border-radius: 4px;
+        }
+
+        .history-scroll::-webkit-scrollbar-thumb:hover {
+            background: #e94560;
+        }
+
+        /* Empty state */
+        .history-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #aaa;
+        }
+
+        .history-empty-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+    </style>
 </head>
 <body>
     <!-- Timer abonnement -->
@@ -63,7 +238,7 @@
             {% else %}
             <div class="info-box role">
                 <div class="label" data-translate="prediction_count_label"></div>
-                <div class="value" id="topWonCount">0/4</div>
+                <div class="value" id="topWonCount">0/5</div>
             </div>
             {% endif %}
             <div class="info-box role">
@@ -117,6 +292,40 @@
                 <div class="value" id="pauseTimerValue">--:--</div>
             </div>
         </div>
+
+        <!-- ============================================================ -->
+        <!-- HISTORIQUE DES 20 DERNIÈRES PRÉDICTIONS - STYLE ADMIN -->
+        <!-- ============================================================ -->
+        <div class="prediction-history" id="predictionHistory">
+            <h3>Historique des Prédictions</h3>
+            <div class="history-scroll">
+                <table class="admin-style-table" id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>JEU #</th>
+                            <th>TYPE</th>
+                            <th>RÉSULTAT</th>
+                            <th>STATUT</th>
+                            <th>DATE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="predictionsHistoryBody">
+                        <tr>
+                            <td colspan="5" class="history-empty">
+                                <div class="history-empty-icon">📊</div>
+                                Chargement de l'historique...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="history-footer">
+                <button onclick="loadPredictionHistory()" class="btn-refresh">
+                    🔄 Rafraîchir
+                </button>
+            </div>
+        </div>
+        <!-- ============================================================ -->
 
         <!-- Déconnexion -->
         <button class="btn btn-disconnect" onclick="logout()" data-translate="disconnect">
