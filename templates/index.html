@@ -25,7 +25,11 @@
         <!-- Titre -->
         <div class="main-title">
             <div class="icon" style="background: none; border: none;">
-                <img src="/static/logo.png?v={{ range(1, 100000) | random }}" alt="Logo" id="siteLogo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <img src="/static/logo.png?v={{ range(1, 100000) | random }}" 
+                     alt="Logo" 
+                     id="siteLogo" 
+                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                 <span style="display: none;">🎰</span>
             </div>
             <h1 data-translate="title">Prédicteur Baccara</h1>
@@ -48,18 +52,22 @@
         
         <div class="info-bar">
             {% if user.is_admin or user.email == 'sossoukouam@gmail.com' %}
-            <a href="/admin" class="info-box role" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer; text-decoration: none; display: flex !important; flex-direction: column; align-items: center; justify-content: center;">
+            <a href="/admin" class="info-box role" 
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                      cursor: pointer; text-decoration: none; 
+                      display: flex !important; flex-direction: column; 
+                      align-items: center; justify-content: center;">
                 <div class="label" style="color: white !important;">ADMIN</div>
                 <div class="value" style="font-size: 1.2em; color: white !important;">PANEL 🔧</div>
             </a>
             {% else %}
             <div class="info-box role">
-                <div class="label">Préd. restantes</div>
+                <div class="label" data-translate="prediction_count_label"></div>
                 <div class="value" id="topWonCount">0/4</div>
             </div>
             {% endif %}
             <div class="info-box role">
-                <div class="label">Pause</div>
+                <div class="label" data-translate="pause_label"></div>
                 <div class="value" id="topLostCount">0</div>
             </div>
             <div class="info-box win-rate">
@@ -97,13 +105,15 @@
             </div>
         </div>
 
+        <!-- Barre pause secondaire -->
         <div class="info-bar" id="pauseInfoBar" style="display: none; margin-top: 10px;">
             <div class="info-box role" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <div class="label">Préd. Restantes</div>
+                <div class="label" data-translate="prediction_count_label"></div>
                 <div class="value" id="predRemaining">0</div>
             </div>
-            <div class="info-box win-rate" id="pauseTimerBox" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);">
-                <div class="label">Pause</div>
+            <div class="info-box win-rate" id="pauseTimerBox" 
+                 style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);">
+                <div class="label" data-translate="pause_label"></div>
                 <div class="value" id="pauseTimerValue">--:--</div>
             </div>
         </div>
@@ -137,8 +147,6 @@
     <script src="/static/js/lang.js"></script>
     <script src="/static/js/app.js"></script>
     <script>
-        // Init
-        // currentUser est déjà déclaré dans app.js, on ne fait que le peupler
         currentUser = {
             first_name: '{{ user.first_name }}',
             last_name: '{{ user.last_name }}',
