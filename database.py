@@ -275,6 +275,37 @@ def block_user(user_id: int):
     c.close()
     conn.close()
 
+def clear_all_except_users():
+    """Efface tout sauf les données utilisateurs essentielles"""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    try:
+        # 1. Supprimer les sessions
+        c.execute('DELETE FROM sessions')
+        
+        # 2. Supprimer les logs de prédictions
+        c.execute('DELETE FROM predictions_log')
+        
+        # 3. Nettoyer les utilisateurs (garder uniquement les champs cités)
+        # Cités: nom (first_name), prénom (last_name), email, passe (password_hash/plain_password), temps restant (subscription_end/remaining_time_seconds)
+        c.execute('''
+            UPDATE users 
+            SET last_login = NULL,
+                telegram_id = CASE WHEN is_admin THEN telegram_id ELSE NULL END
+            WHERE is_admin = FALSE
+        ''')
+        
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Erreur clear_db: {e}")
+        conn.rollback()
+        return False
+    finally:
+        c.close()
+        conn.close()
+
 def unblock_user(user_id: int):
     """Débloque un utilisateur"""
     conn = get_connection()

@@ -18,7 +18,7 @@ PREDICTION_CHANNEL_ID = parse_channel_id('PREDICTION_CHANNEL_ID', '-100357940044
 # Credentials API Telegram
 API_ID = int(os.getenv('API_ID') or '29177661')
 API_HASH = os.getenv('API_HASH') or 'a8639172fa8d35dbfd8ea46286d349ab'
-BOT_TOKEN = os.getenv('BOT_TOKEN') or '7722770680:AAEblHwJ13_GebBWBFmIo5ioiGYYgDaP2iQ'
+BOT_TOKEN = os.getenv('BOT_TOKEN') or '7644537698:AAFjBt4dBfCB5YH4hxaPXV1bIXlNyIAQwjc'
 
 # Admin Telegram
 ADMIN_ID = int(os.getenv('ADMIN_ID') or '1190237801')

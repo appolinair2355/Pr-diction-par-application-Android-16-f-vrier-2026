@@ -59,23 +59,26 @@ async def start_user_bot():
         setup_handlers(client, config, source_ids)
         
         # Test canal prédiction
-        if PREDICTION_CHANNEL_ID:
+        try:
+            # Tenter de convertir en entier si possible (ID numérique)
             try:
-                # Tenter de convertir en entier si c'est un ID numérique
-                try:
-                    clean_id = str(PREDICTION_CHANNEL_ID).strip()
-                    if clean_id.startswith('-100'):
-                        p_id = int(clean_id)
-                    elif clean_id.isdigit():
-                        p_id = int(f"-100{clean_id}")
-                    else:
-                        p_id = clean_id
-                except (ValueError, TypeError):
-                    p_id = PREDICTION_CHANNEL_ID
-                await client.get_entity(p_id)
-                logger.info(f"✅ Canal prédiction {p_id} accessible")
-            except Exception as e:
-                logger.warning(f"⚠️ Canal prédition: {e}")
+                clean_id = str(PREDICTION_CHANNEL_ID).strip()
+                if clean_id.startswith('-100'):
+                    p_id = int(clean_id)
+                elif clean_id.isdigit():
+                    p_id = int(f"-100{clean_id}")
+                else:
+                    p_id = clean_id
+            except (ValueError, TypeError):
+                p_id = PREDICTION_CHANNEL_ID
+            
+            # S'assurer que le bot a accès aux entités
+            if not session_string: # Only if not using string session which might already have dialogs
+                 await client.get_dialogs()
+            await client.get_entity(p_id)
+            logger.info(f"✅ Canal prédiction {p_id} accessible")
+        except Exception as e:
+            logger.warning(f"⚠️ Canal prédition: {e}")
         
         return client
         
@@ -100,6 +103,10 @@ async def start_admin_bot():
         # Démarrer avec le token du bot existant
         await client.start(bot_token=BOT_TOKEN)
         logger.info("✅ Bot admin notifications prêt")
+        
+        # S'assurer que le bot a accès aux entités avant d'envoyer
+        if not session_string:
+            await client.get_dialogs()
         
         # Test envoi message à l'admin
         try:
@@ -132,37 +139,45 @@ async def start_web_server(bot_clients):
     
     return runner
 
+async def connect_bots():
+    """Connect Telegram bots in the background after web server is up"""
+    global bot_client, admin_bot_client
+    import web_server as ws
+
+    try:
+        bot_client = await start_user_bot()
+        admin_bot_client = await start_admin_bot()
+
+        ws.bot_client = bot_client
+        ws.admin_bot_client = admin_bot_client
+
+        if admin_bot_client:
+            from telethon import events
+            from web_server import handle_admin_commands
+            @admin_bot_client.on(events.NewMessage(pattern='/'))
+            async def admin_cmd_handler(event):
+                await handle_admin_commands(event)
+
+        logger.info("✅ Bots Telegram connectés en arrière-plan")
+    except Exception as e:
+        logger.error(f"❌ Erreur connexion bots: {e}")
+
 async def main():
     logger.info("🚀 Démarrage...")
-    
-    # Initialiser DB
+
     init_db()
     logger.info("✅ Base de données OK")
-    
-    # Démarrer les deux bots en parallèle
-    global bot_client, admin_bot_client
-    
-    bot_client = await start_user_bot()
-    admin_bot_client = await start_admin_bot()
-    
-    # Stocker pour les modules
-    import web_server
-    web_server.bot_client = bot_client
-    web_server.admin_bot_client = admin_bot_client
-    
-    # Démarrer serveur web
+
     web_runner = await start_web_server({
-        'user': bot_client,
-        'admin': admin_bot_client
+        'user': None,
+        'admin': None
     })
-    
-    # Garder l'application en vie
-    if bot_client:
-        logger.info("✅ Application démarrée!")
-        await bot_client.run_until_disconnected()
-    else:
-        while True:
-            await asyncio.sleep(3600)
+    logger.info("✅ Serveur web démarré, connexion des bots en arrière-plan...")
+
+    asyncio.create_task(connect_bots())
+
+    while True:
+        await asyncio.sleep(3600)
 
 if __name__ == '__main__':
     try:

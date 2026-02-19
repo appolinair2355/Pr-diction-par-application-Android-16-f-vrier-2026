@@ -331,7 +331,7 @@ async def check_and_launch_prediction(game_number: int):
     
     # Cycle de pause
     state.pause_config['predictions_count'] += 1
-    if state.pause_config['predictions_count'] >= 4:
+    if state.pause_config['predictions_count'] >= 5:
         cycle = state.pause_config['cycle']
         idx = state.pause_config['current_index'] % len(cycle)
         duration = cycle[idx]
@@ -443,7 +443,7 @@ async def handle_message(event, config, source_ids):
         message_text = event.message.message
         
         # Traiter uniquement le canal source
-        if chat_id == source_ids.get('SOURCE_CHANNEL_ID'):
+        if str(chat_id) == str(source_ids.get('SOURCE_CHANNEL_ID')) or str(chat_id) == str(source_ids.get('SOURCE_CHANNEL_2_ID')):
             is_final = is_message_finalized(message_text)
             await process_source_message(message_text, chat_id, source_ids, is_final, config)
         
@@ -459,7 +459,7 @@ async def handle_edited_message(event, config, source_ids):
             if not str(chat_id).startswith('-100'):
                 chat_id = int(f"-100{abs(chat_id)}")
         
-        if chat_id == source_ids.get('SOURCE_CHANNEL_ID'):
+        if str(chat_id) == str(source_ids.get('SOURCE_CHANNEL_ID')) or str(chat_id) == str(source_ids.get('SOURCE_CHANNEL_2_ID')):
             message_text = event.message.message
             await process_source_message(message_text, chat_id, source_ids, False, config)
             
@@ -565,7 +565,7 @@ Commandes:
 🟢 Prédictions: {'ON' if state.predictions_enabled else 'OFF'}
 
 ⏸️ Pause: {pause_status}
-• Compteur: {state.pause_config['predictions_count']}/4
+• Compteur: {state.pause_config['predictions_count']}/5
 • Cycle: {cycle_mins} min
 • Position: {idx+1}/{len(cycle_mins)}""")
     

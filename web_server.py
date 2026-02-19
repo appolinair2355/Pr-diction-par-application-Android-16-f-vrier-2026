@@ -164,11 +164,9 @@ async def api_predictions(request):
     # Pause info
     pause_info = None
     if bot_state.pause_config:
-        # Préd. restantes: On veut afficher X/4
-        # Si predictions_count est 0 juste après une pause, on affiche 4/4
-        # Si on a fait 1 pred, on affiche 3/4, etc.
-        rem_count = 4 - bot_state.pause_config['predictions_count']
-        remaining_before_pause = f"{rem_count}/4"
+        # Préd. restantes: On veut afficher X/5
+        rem_count = 5 - bot_state.pause_config['predictions_count']
+        remaining_before_pause = f"{rem_count}/5"
         
         is_paused = bot_state.pause_config['is_paused']
         remaining_pause_time = "0"
@@ -371,6 +369,36 @@ async def handle_admin_commands(event):
                 await event.reply(f"✅ {email} débloqué")
             else:
                 await event.reply(f"❌ {email} non trouvé")
+                
+        elif command == '/clearall':
+            from database import clear_all_except_users
+            from bot_logic import state as bot_state
+            
+            # 1. Clear database
+            if clear_all_except_users():
+                # 2. Reset bot state
+                bot_state.predictions_enabled = True
+                bot_state.won_predictions = 0
+                bot_state.lost_predictions = 0
+                bot_state.total_predictions = 0
+                bot_state.prediction_history.clear()
+                bot_state.processed_messages.clear()
+                
+                # 3. Reset pause cycle
+                bot_state.pause_config['predictions_count'] = 0
+                bot_state.pause_config['is_paused'] = False
+                bot_state.pause_config['current_index'] = 0
+                
+                # 4. Clear verification state
+                bot_state.verification_state = {
+                    'predicted_number': None, 'predicted_suit': None,
+                    'current_check': 0, 'message_id': None,
+                    'channel_id': None, 'status': None, 'base_game': None
+                }
+                
+                await event.reply("✅ Système réinitialisé !\n- Base de données nettoyée (hors utilisateurs)\n- Compteurs à zéro\n- Prédictions automatiques reprises")
+            else:
+                await event.reply("❌ Erreur lors du nettoyage de la base de données")
                 
         elif command == '/help':
             await event.reply("""📚 COMMANDES ADMIN:
