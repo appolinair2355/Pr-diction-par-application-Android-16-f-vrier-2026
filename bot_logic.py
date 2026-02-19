@@ -1,6 +1,7 @@
 """
-Logique du bot Telegram - VERSION CORRIGÉE ET FINALISÉE
+Logique du bot Telegram - VERSION CORRIGÉE AVEC PAUSE APRÈS 4 PRÉDICTIONS
 Canal: -1003579400443
+La pause se déclenche quand on trouve le déclencheur de la 5ème prédiction
 """
 import os
 import re
@@ -53,9 +54,10 @@ class BotState:
         self.pause_config = {
             'cycle': [180, 300, 240],  # 3min, 5min, 4min
             'current_index': 0,
-            'predictions_count': 0,
+            'predictions_count': 0,  # Compte les prédictions envoyées (1-4)
             'is_paused': False,
-            'pause_end_time': None
+            'pause_end_time': None,
+            'waiting_for_fifth_trigger': False  # 🔧 NOUVEAU: Attend le 5ème déclencheur
         }
 
 state = BotState()
@@ -66,17 +68,12 @@ state = BotState()
 
 def extract_game_number(message: str):
     """Extrait le numéro du jeu du message source"""
-    # Recherche format #N123 ou #N 123
     match = re.search(r"#N\s*(\d+)", message, re.IGNORECASE)
     if match:
         return int(match.group(1))
-
-    # Recherche format ( #N123 )
     match = re.search(r"\(\s*#N\s*(\d+)", message, re.IGNORECASE)
     if match:
         return int(match.group(1))
-
-    # Fallback sur un numéro de 3-4 chiffres
     match = re.search(r"\b(\d{3,4})\b", message)
     if match:
         return int(match.group(1))
@@ -150,12 +147,10 @@ def get_trigger_target(number):
         return None
     return number + 1
 
-# 🔧 CORRECTION: Détection de finalisation simplifiée
 def is_message_finalized(message: str) -> bool:
     """Un message est finalisé s'il contient ✅ ou 🔰"""
     return '✅' in message or '🔰' in message
 
-# 🔧 CORRECTION: Détection d'édition
 def is_message_editing(message: str) -> bool:
     """Un message est en cours d'édition s'il commence par ⏰"""
     return message.strip().startswith('⏰')
@@ -171,7 +166,6 @@ async def send_prediction_to_channel(target_game: int, predicted_suit: str, base
         return None
 
     try:
-        # Nettoyage de l'ID
         try:
             clean_id = str(PREDICTION_CHANNEL_ID).strip()
             if clean_id.startswith('-100'):
@@ -187,7 +181,6 @@ async def send_prediction_to_channel(target_game: int, predicted_suit: str, base
 🎯 **Couleur:** {SUIT_DISPLAY.get(predicted_suit, predicted_suit)}
 ⏳ **Statut:** EN ATTENTE DU RÉSULTAT..."""
 
-        # S'assurer que le client a l'entité
         try:
             entity = await state.client.get_entity(channel_id)
             pred_msg = await state.client.send_message(entity, prediction_msg)
@@ -207,7 +200,6 @@ async def send_prediction_to_channel(target_game: int, predicted_suit: str, base
 
         state.total_predictions += 1
 
-        # Ajouter à l'historique
         prediction_data = {
             'game_number': target_game,
             'suit': predicted_suit,
@@ -242,7 +234,6 @@ async def update_prediction_status(status: str):
             status_text = f"{status} GAGNÉ"
             state.won_predictions += 1
 
-        # Log to database
         try:
             from database import log_prediction
             log_prediction(predicted_num, predicted_suit, "WON" if "GAGNÉ" in status_text else "LOST")
@@ -255,7 +246,6 @@ async def update_prediction_status(status: str):
 
         await state.client.edit_message(channel_id, message_id, updated_msg)
 
-        # Mettre à jour l'historique
         for pred in state.prediction_history:
             if pred['game_number'] == predicted_num:
                 pred['status'] = status
@@ -263,14 +253,12 @@ async def update_prediction_status(status: str):
 
         logger.info(f"✅ Prédiction #{predicted_num} mise à jour: {status}")
 
-        # Reset état
         state.verification_state = {
             'predicted_number': None, 'predicted_suit': None,
             'current_check': 0, 'message_id': None,
             'channel_id': None, 'status': None, 'base_game': None
         }
 
-        # S'assurer que le numéro actuel est mis à jour
         state.current_game_number = predicted_num
         state.last_source_game_number = predicted_num
 
@@ -314,25 +302,63 @@ def extract_suits_from_group(group_str: str) -> list:
     normalized = normalize_suits(group_str)
     return [s for s in ['♥', '♠', '♦', '♣'] if s in normalized]
 
+# 🔧 CORRECTION: Nouvelle logique de pause
+def should_pause_before_prediction() -> bool:
+    """
+    Vérifie si on doit faire une pause avant d'envoyer la prochaine prédiction.
+    Retourne True si on a déjà envoyé 4 prédictions et qu'on attend le 5ème déclencheur.
+    """
+    return state.pause_config['predictions_count'] >= 4 and state.pause_config['waiting_for_fifth_trigger']
+
+async def trigger_pause_cycle():
+    """Déclenche la pause et envoie le message au canal"""
+    cycle = state.pause_config['cycle']
+    idx = state.pause_config['current_index'] % len(cycle)
+    duration = cycle[idx]
+
+    state.pause_config['is_paused'] = True
+    state.pause_config['pause_end_time'] = (datetime.now() + timedelta(seconds=duration)).isoformat()
+    state.pause_config['current_index'] += 1
+    state.pause_config['predictions_count'] = 0  # Reset pour le prochain cycle
+    state.pause_config['waiting_for_fifth_trigger'] = False  # Reset le flag
+
+    minutes = duration // 60
+    logger.info(f"⏸️ PAUSE DÉCLENCHÉE: {minutes}min (après 4 prédictions)")
+
+    try:
+        await state.client.send_message(
+            PREDICTION_CHANNEL_ID,
+            f"⏸️ **PAUSE**\n⏱️ {minutes} minutes...\n📊 4 prédictions effectuées"
+        )
+    except Exception as e:
+        logger.error(f"Erreur message pause: {e}")
+
 async def check_and_launch_prediction(game_number: int):
-    """Vérifie et lance une prédiction"""
+    """
+    Vérifie et lance une prédiction.
+    Logique de pause: après 4 prédictions, la pause se déclenche au 5ème déclencheur trouvé.
+    """
     # Bloquer si prédiction en cours
     if state.verification_state['predicted_number'] is not None:
         logger.warning(f"⛔ BLOQUÉ: Prédiction en attente de vérification")
         return
 
-    # Vérifier pause
+    # Vérifier pause active
     if state.pause_config['is_paused']:
         try:
             end_time = datetime.fromisoformat(state.pause_config['pause_end_time'])
             if datetime.now() < end_time:
+                logger.info(f"⏸️ Pause en cours, attente...")
                 return
+            # Pause terminée
             state.pause_config['is_paused'] = False
             state.pause_config['predictions_count'] = 0
-            logger.info("🔄 Pause terminée")
+            state.pause_config['waiting_for_fifth_trigger'] = False
+            logger.info("🔄 Pause terminée, reprise des prédictions")
         except:
             state.pause_config['is_paused'] = False
             state.pause_config['predictions_count'] = 0
+            state.pause_config['waiting_for_fifth_trigger'] = False
 
     # Vérifier déclencheur
     if not is_trigger_number(game_number):
@@ -342,37 +368,30 @@ async def check_and_launch_prediction(game_number: int):
     if not target_num:
         return
 
-    # Lancer prédiction
     suit = get_suit_for_number(target_num)
-    if suit:
-        msg_id = await send_prediction_to_channel(target_num, suit, game_number)
+    if not suit:
+        return
 
-        # 🔧 CORRECTION: Incrémenter le compteur UNIQUEMENT si prédiction envoyée avec succès
-        if msg_id:
-            state.pause_config['predictions_count'] += 1
-            logger.info(f"📊 Compteur de pause: {state.pause_config['predictions_count']}/4")
+    # 🔧 NOUVELLE LOGIQUE DE PAUSE
+    # Si on a déjà envoyé 4 prédictions et qu'on attend le 5ème déclencheur
+    if state.pause_config['predictions_count'] >= 4:
+        if state.pause_config['waiting_for_fifth_trigger']:
+            # C'est le 5ème déclencheur ! On lance la pause au lieu de la prédiction
+            logger.info(f"🎯 5ème déclencheur trouvé (#{game_number}) → LANCEMENT PAUSE")
+            await trigger_pause_cycle()
+            return
+        else:
+            # Première fois qu'on atteint 4, on met le flag pour attendre le prochain déclencheur
+            state.pause_config['waiting_for_fifth_trigger'] = True
+            logger.info(f"📊 4 prédictions atteintes, attente du 5ème déclencheur pour pause...")
 
-            # 🔧 CORRECTION: Vérifier si on doit faire une pause
-            if state.pause_config['predictions_count'] >= 4:
-                cycle = state.pause_config['cycle']
-                idx = state.pause_config['current_index'] % len(cycle)
-                duration = cycle[idx]
+    # Envoyer la prédiction
+    msg_id = await send_prediction_to_channel(target_num, suit, game_number)
 
-                state.pause_config['is_paused'] = True
-                state.pause_config['pause_end_time'] = (datetime.now() + timedelta(seconds=duration)).isoformat()
-                state.pause_config['current_index'] += 1
-                state.pause_config['predictions_count'] = 0
-
-                minutes = duration // 60
-                logger.info(f"⏸️ PAUSE: {minutes}min")
-
-                try:
-                    await state.client.send_message(
-                        PREDICTION_CHANNEL_ID,
-                        f"⏸️ **PAUSE**\n⏱️ {minutes} minutes..."
-                    )
-                except Exception as e:
-                    logger.error(f"Erreur message pause: {e}")
+    # Incrémenter le compteur uniquement si envoyée avec succès
+    if msg_id:
+        state.pause_config['predictions_count'] += 1
+        logger.info(f"📊 Compteur de prédictions: {state.pause_config['predictions_count']}/4 (prochaine pause au 5ème déclencheur)")
 
 async def send_pause_message_to_channel(duration_seconds: int, end_time_iso=None):
     """Envoie le message de pause au canal et met à jour l'état"""
@@ -389,6 +408,7 @@ async def send_pause_message_to_channel(duration_seconds: int, end_time_iso=None
 
     state.pause_config['is_paused'] = True
     state.pause_config['predictions_count'] = 0
+    state.pause_config['waiting_for_fifth_trigger'] = False
 
     try:
         await state.client.send_message(
@@ -399,7 +419,6 @@ async def send_pause_message_to_channel(duration_seconds: int, end_time_iso=None
     except Exception as e:
         logger.error(f"Erreur message pause: {e}")
 
-# 🔧 CORRECTION: Process_source_message corrigé pour attendre la finalisation
 async def process_source_message(message_text: str, chat_id: int, source_ids: dict, is_finalized=False, config=None):
     """Traite les messages du canal source avec prédiction automatique"""
     try:
@@ -414,7 +433,6 @@ async def process_source_message(message_text: str, chat_id: int, source_ids: di
 
         logger.info(f"Traitement message source: chat_id={chat_id}, attendu={source_ids.get('SOURCE_CHANNEL_ID')}")
 
-        # Vérifier si c'est le canal source
         if str(chat_id) != str(source_ids.get('SOURCE_CHANNEL_ID')):
             return
 
@@ -426,7 +444,6 @@ async def process_source_message(message_text: str, chat_id: int, source_ids: di
         state.current_game_number = game_number
         state.last_source_game_number = game_number
 
-        # Éviter doublons
         message_hash = f"{game_number}_{message_text[:30]}"
         if message_hash in state.processed_messages:
             return
@@ -435,35 +452,27 @@ async def process_source_message(message_text: str, chat_id: int, source_ids: di
         is_editing = is_message_editing(message_text)
         is_final = is_message_finalized(message_text) or is_finalized
 
-        # 🔧 CORRECTION: Vérification prédiction en cours
+        # Vérification prédiction en cours
         if state.verification_state['predicted_number'] is not None:
             predicted_num = state.verification_state['predicted_number']
             current_check = state.verification_state['current_check']
             expected_number = predicted_num + current_check
 
-            # Vérifier si ce numéro est celui qu'on attend
             if game_number == expected_number:
                 if is_editing and not is_final:
-                    # 🔧 Message en édition, on attend qu'il soit finalisé
                     logger.info(f"⏳ Message #{game_number} en édition (⏰), attente finalisation...")
                     return
 
                 if is_final:
-                    # 🔧 Message finalisé, on peut vérifier
                     groups = extract_parentheses_groups(message_text)
                     if groups:
                         logger.info(f"✅ Message #{game_number} finalisé, vérification...")
                         await process_verification_step(game_number, groups[0])
                         return
-                    else:
-                        logger.warning(f"⚠️ Message #{game_number} finalisé mais pas de groupes trouvés")
-                        return
 
-            # Ce n'est pas le numéro attendu, on ne fait rien
             return
 
-        # 🔧 Pas de prédiction en cours, on peut en lancer une nouvelle
-        # La prédiction se lance immédiatement sans attendre la finalisation
+        # Pas de prédiction en cours, on peut en lancer une nouvelle
         await check_and_launch_prediction(game_number)
 
     except Exception as e:
@@ -472,7 +481,7 @@ async def process_source_message(message_text: str, chat_id: int, source_ids: di
         logger.error(traceback.format_exc())
 
 # ============================================================
-# HANDLERS CORRIGÉS
+# HANDLERS
 # ============================================================
 
 async def handle_message(event, config, source_ids):
@@ -486,7 +495,6 @@ async def handle_message(event, config, source_ids):
 
         message_text = event.message.message
 
-        # Traiter uniquement le canal source
         if chat_id == source_ids.get('SOURCE_CHANNEL_ID'):
             is_final = is_message_finalized(message_text)
             await process_source_message(message_text, chat_id, source_ids, is_final, config)
@@ -494,7 +502,6 @@ async def handle_message(event, config, source_ids):
     except Exception as e:
         logger.error(f"Erreur handle_message: {e}")
 
-# 🔧 CORRECTION: handle_edited_message corrigé pour détecter la finalisation
 async def handle_edited_message(event, config, source_ids):
     """Gestionnaire des messages édités"""
     try:
@@ -506,7 +513,6 @@ async def handle_edited_message(event, config, source_ids):
 
         if chat_id == source_ids.get('SOURCE_CHANNEL_ID'):
             message_text = event.message.message
-            # 🔧 CORRECTION: Détecter correctement si le message est finalisé
             is_final = is_message_finalized(message_text)
             logger.info(f"📝 Message édité #{extract_game_number(message_text)}: finalisé={is_final}")
             await process_source_message(message_text, chat_id, source_ids, is_final, config)
@@ -522,7 +528,6 @@ def setup_handlers(client, config, source_ids):
     """Configure les gestionnaires d'événements"""
     state.client = client
 
-    # Update initial stats from database
     try:
         from database import get_prediction_stats
         won, lost = get_prediction_stats()
@@ -605,6 +610,9 @@ Commandes:
             except:
                 pass
 
+        # 🔧 Info supplémentaire sur l'attente du 5ème déclencheur
+        waiting_fifth = "Oui" if state.pause_config['waiting_for_fifth_trigger'] else "Non"
+
         await event.respond(f"""📊 STATUT
 
 🎯 Source: #{state.current_game_number}
@@ -613,6 +621,7 @@ Commandes:
 
 ⏸️ Pause: {pause_status}
 • Compteur: {state.pause_config['predictions_count']}/4
+• Attente 5ème déclencheur: {waiting_fifth}
 • Cycle: {cycle_mins} min
 • Position: {idx+1}/{len(cycle_mins)}""")
 
@@ -643,6 +652,7 @@ Commandes:
 Cycle: {cycle_mins} min
 Position: {idx+1}/{len(cycle_mins)}
 Compteur: {state.pause_config['predictions_count']}/4
+Attente 5ème déclencheur: {'Oui' if state.pause_config['waiting_for_fifth_trigger'] else 'Non'}
 
 Modifier: /pausecycle 3,5,4""")
         else:
