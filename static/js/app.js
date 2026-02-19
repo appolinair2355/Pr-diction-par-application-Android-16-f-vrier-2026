@@ -19,6 +19,10 @@ function initApp(lang, user) {
     // Charger les données
     fetchData();
     setInterval(fetchData, 3000);
+
+    // 🔧 NOUVEAU: Charger l'historique des prédictions
+    loadPredictionHistory();
+    setInterval(loadPredictionHistory, 30000); // Rafraîchir toutes les 30s
 }
 
 function changeLang(lang) {
@@ -261,6 +265,129 @@ async function fetchData() {
 async function logout() {
     await fetch('/api/logout', {method: 'POST'});
     window.location = '/login';
+}
+
+// ============================================================
+// 🔧 NOUVELLES FONCTIONS POUR L'HISTORIQUE (STYLE ADMIN)
+// ============================================================
+
+// Obtenir la classe CSS pour le costume
+function getSuitClassForHistory(suit) {
+    if (!suit) return '';
+    const s = suit.toLowerCase();
+    if (s.includes('♥') || s.includes('heart') || s.includes('coeur')) return 'suit-hearts';
+    if (s.includes('♦') || s.includes('diamond') || s.includes('carreau')) return 'suit-diamonds';
+    if (s.includes('♣') || s.includes('club') || s.includes('trefle')) return 'suit-clubs';
+    if (s.includes('♠') || s.includes('spade') || s.includes('pique')) return 'suit-spades';
+    return '';
+}
+
+// Formater le statut comme admin (✅0, ✅1, ✅2, ❌)
+function formatStatusForHistory(status) {
+    if (!status) return { text: '⏳', class: 'status-pending', num: '' };
+
+    // Si c'est déjà un format ✅0, ✅1, etc.
+    const match = status.match(/✅(\d)/);
+    if (match) {
+        return { 
+            text: '', 
+            class: 'status-won', 
+            num: match[1]
+        };
+    }
+
+    if (status.includes('GAGNÉ') || status.includes('GAGNE') || status.includes('✅')) {
+        // Extraire le numéro si présent
+        const numMatch = status.match(/(\d)/);
+        return { 
+            text: '', 
+            class: 'status-won', 
+            num: numMatch ? numMatch[1] : ''
+        };
+    }
+
+    if (status.includes('PERDU') || status.includes('❌')) {
+        return { text: '', class: 'status-lost', num: '' };
+    }
+
+    return { text: '⏳', class: 'status-pending', num: '' };
+}
+
+// 🔧 NOUVELLE FONCTION: Charger l'historique des 20 dernières prédictions
+async function loadPredictionHistory() {
+    try {
+        const res = await fetch('/api/predictions?limit=20');
+        if (res.ok) {
+            const data = await res.json();
+            const tbody = document.getElementById('predictionsHistoryBody');
+
+            if (!tbody) {
+                console.error('Element predictionsHistoryBody non trouvé');
+                return;
+            }
+
+            if (data.predictions && data.predictions.length > 0) {
+                tbody.innerHTML = '';
+
+                // Inverser pour avoir les plus récents en premier si besoin, 
+                // mais fetchData renvoie déjà l'historique dans l'ordre du state.
+                // On prend les 20 derniers.
+                const history = data.predictions.slice(-20).reverse();
+
+                history.forEach(p => {
+                    const tr = document.createElement('tr');
+
+                    // Formater le statut
+                    const status = formatStatusForHistory(p.status);
+
+                    // Formater le costume
+                    const suitClass = getSuitClassForHistory(p.suit);
+                    const suitSymbol = p.suit ? p.suit.charAt(0) : '-';
+
+                    // Formater la date
+                    const date = new Date(p.timestamp);
+                    const dateStr = date.toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit'
+                    });
+                    const timeStr = date.toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    // Construire le badge de statut
+                    let statusBadge = '';
+                    if (status.class === 'status-won') {
+                        statusBadge = `<span class="status-badge ${status.class}">✅${status.num}</span>`;
+                    } else if (status.class === 'status-lost') {
+                        statusBadge = `<span class="status-badge ${status.class}">❌</span>`;
+                    } else {
+                        statusBadge = `<span class="status-badge ${status.class}">⏳</span>`;
+                    }
+
+                    tr.innerHTML = `
+                        <td class="game-number">#${p.game_number}</td>
+                        <td><span class="suit-symbol ${suitClass}">${suitSymbol}</span></td>
+                        <td>${p.result || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td class="date-cell">${dateStr}<br>${timeStr}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="history-empty">
+                            <div class="history-empty-icon">📭</div>
+                            Aucune prédiction dans l'historique
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    } catch (e) {
+        console.error('Erreur chargement historique:', e);
+    }
 }
 
 // Gestionnaire de sélection de langue
